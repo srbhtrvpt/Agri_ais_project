@@ -26,7 +26,7 @@ typedef pcl::PointCloud<PointT> PointCloud;
 typedef pcl::PointCloud<PointNT> PointCloudN;
 
 PointCloud::Ptr cloud_in(new PointCloud), cloud_inliers(new PointCloud),cloud_outliers(new PointCloud);
-sensor_msgs::PointCloud2::Ptr output_ground(new sensor_msgs::PointCloud2), output_plants(new sensor_msgs::PointCloud2);
+sensor_msgs::PointCloud2::Ptr output_ground(new sensor_msgs::PointCloud2), output_plants(new sensor_msgs::PointCloud2), cloud_out(new sensor_msgs::PointCloud2);
 
 pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
 pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
@@ -90,11 +90,11 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
 {
     pcl::NormalEstimation<PointT, PointNT> ne;
     pcl::fromROSMsg(*cloud, *cloud_in);
-   /* std::vector<int> map;
+    std::vector<int> map;
     cloud_in->is_dense = false;
-    pcl::removeNaNFromPointCloud(*cloud_in, *cloud_in, map); */
+    pcl::removeNaNFromPointCloud(*cloud_in, *cloud_in, map);
 
-    
+
     visualization_msgs::Marker marker;
     marker.header.frame_id = cloud->header.frame_id;
     marker.header.stamp = cloud->header.stamp;
@@ -191,9 +191,9 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
     }
     else
     {
-        std::vector<int> indices;
+        /* std::vector<int> indices;
         cloud_in->is_dense = false;
-        pcl::removeNaNFromPointCloud(*cloud_in, *cloud_in, indices); 
+        pcl::removeNaNFromPointCloud(*cloud_in, *cloud_in, indices); */
 
         ne.setInputCloud(cloud_in);
         pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>());
@@ -292,9 +292,9 @@ int main(int argc, char *argv[])
     ros::NodeHandle nh;
     //std::cout << PCL_VERSION << std::endl;
 
-    ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/sensor/laser/vlp16/front/pointcloud_xyzi", 1, callback);
+    //ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/sensor/laser/vlp16/front/pointcloud_xyzi", 1, callback);
 
-    //ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/point_cloud_decay", 10, callback);
+    ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/point_cloud_decay", 10, callback);
     vis_pub = nh.advertise<visualization_msgs::Marker>("visualization_marker", 1, true);
     point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud_ground", 1, true);
     point_cloud_out_pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud_plants", 1, true);
