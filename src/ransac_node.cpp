@@ -28,9 +28,8 @@ typedef pcl::Normal PointNT;
 typedef pcl::PointCloud<PointT> PointCloud;
 typedef pcl::PointCloud<PointNT> PointCloudN;
 
-
 PointCloud::Ptr cloud_in(new PointCloud), cloud_inliers(new PointCloud), cloud_outliers(new PointCloud);
-sensor_msgs::PointCloud2::Ptr output_ground(new sensor_msgs::PointCloud2), output_plants(new sensor_msgs::PointCloud2),cloud_out(new sensor_msgs::PointCloud2);
+sensor_msgs::PointCloud2::Ptr output_ground(new sensor_msgs::PointCloud2), output_plants(new sensor_msgs::PointCloud2), cloud_out(new sensor_msgs::PointCloud2);
 
 pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
 pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
@@ -46,10 +45,7 @@ sensor_msgs::PointField pt_field;
 
 //sensor_msgs::PointField(name='median_curvature', offset=16, datatype=sensor_msgs::PointField::FLOAT32, count=1)}
 
-
-
 //sensor_msgs::PointCloud2Modifier modifier(*cloud_out);
-
 
 bool point_valid(int cc, int rr)
 {
@@ -100,6 +96,27 @@ std::vector<int> neighborhood_plus(int cc, int rr)
     return result;
 }
 
+uint8_t floattoeight(float argn)
+{
+    /*uint8_t bytes[4];
+    bytes[0] = (argn >> 24) & 0xFF;
+    bytes[1] = (argn >> 16) & 0xFF;
+    bytes[2] = (argn >> 8) & 0xFF;
+    bytes[3] = argn & 0xFF;
+    printf("0x%x 0x%x 0x%x 0x%x\n", (unsigned char)bytes[0],
+    (unsigned char)bytes[1],
+    (unsigned char)bytes[2],
+    (unsigned char)bytes[3]); */
+
+    union {
+        float f;
+        struct
+        {
+            uint8_t ut1, ut2, ut3, ut4;
+        } bytes;
+    } converter = {.f = argn};
+    return converter.bytes.ut1, converter.bytes.ut2, converter.bytes.ut3, converter.bytes.ut4;
+}
 //void init_point_fields()
 
 void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
@@ -121,8 +138,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
     marker.scale.x = 0.01;
     marker.pose.orientation.w = 1.0;
 
-    cloud_out->header.frame_id = cloud_in->header.frame_id;
-    cloud_out->header.stamp = cloud->header.stamp;
+    
 
     // std::cout << cloud_in->header.frame_id;
     // ros::Time now(cloud_in->header.stamp / 1e6, fmod(cloud_in->header.stamp, 1e6));
@@ -237,59 +253,55 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
         marker.color.b = 0.0;*/
         // pcl::toROSMsg(*cloud_normals, *output_ground);
 
-
         header_cloud_out.frame_id = cloud_in->header.frame_id;
         header_cloud_out.stamp = cloud->header.stamp;
 
         pt_field.name = 'x';
         pt_field.offset = 0;
-        pt_field.datatype= pt_field.FLOAT32;
-        pt_field.count=1;
+        pt_field.datatype = pt_field.FLOAT32;
+        pt_field.count = 1;
         fields.push_back(pt_field);
         pt_field.name = 'y';
         pt_field.offset = 4;
-        pt_field.datatype= pt_field.FLOAT32;
-        pt_field.count=1;
+        pt_field.datatype = pt_field.FLOAT32;
+        pt_field.count = 1;
         fields.push_back(pt_field);
         pt_field.name = 'z';
         pt_field.offset = 8;
-        pt_field.datatype= pt_field.FLOAT32;
-        pt_field.count=1;
+        pt_field.datatype = pt_field.FLOAT32;
+        pt_field.count = 1;
         fields.push_back(pt_field);
-        pt_field.name = 'curvature';
+        pt_field.name = 'c';
         pt_field.offset = 12;
-        pt_field.datatype= pt_field.FLOAT32;
-        pt_field.count=1;
+        pt_field.datatype = pt_field.FLOAT32;
+        pt_field.count = 1;
         fields.push_back(pt_field);
 
-
-        uint8_t *point_binary;
-
+        //uint8_t *point_binary;
+        std::vector<uint8_t> point_binary(4);
         std::vector<uint8_t> points;
-
 
         for (int i = 0; i < cloud_normals->points.size(); i++)
         {
             std_msgs::ColorRGBA color;
             geometry_msgs::Point p;
-            
-        
+
             if (isfinite(cloud_in->points[i].x) && isfinite(cloud_in->points[i].y) && isfinite(cloud_in->points[i].z) &&
                 isfinite(cloud_normals->points[i].normal_z) && isfinite(cloud_normals->points[i].normal_y) &&
                 isfinite(cloud_normals->points[i].normal_x) && cloud_normals->points[i].curvature)
             {
                 if (cloud_normals->points[i].curvature < 0.00275)
-            {
-                color.r = 1.0;
-                color.g = 0.0;
-                color.b = 0.0;
-            }
-            else
-            {
-                color.r = 0.0;
-                color.g = 0.0;
-                color.b = 1.0;
-            }
+                {
+                    color.r = 1.0;
+                    color.g = 0.0;
+                    color.b = 0.0;
+                }
+                else
+                {
+                    color.r = 0.0;
+                    color.g = 0.0;
+                    color.b = 1.0;
+                }
                 p.x = cloud_in->points[i].x;
                 p.y = cloud_in->points[i].y;
                 p.z = cloud_in->points[i].z;
@@ -300,7 +312,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
                 p.x += cloud_normals->points[i].normal_x;
                 marker.points.push_back(p);
                 marker.colors.push_back(color);
-                
+
                 /*
                 ++iter_x;
                 ++iter_y;
@@ -311,23 +323,24 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
                 *iter_z = cloud_in->points[i].x;
                 *iter_c = cloud_normals->points[i].curvature; */
 
-                point_binary = reinterpret_cast<uint8_t*>(&cloud_in->points[i].x);
-                for(i=0;i<3;i++)
+                //point_binary = reinterpret_cast<uint8_t *>(&cloud_in->points[i].x)
+                point_binary[0], point_binary[1], point_binary[2], point_binary[3] = floattoeight(cloud_in->points[i].x);
+                for (i = 0; i < 4; i++)
                 {
                     points.push_back(point_binary[i]);
                 }
-                point_binary = reinterpret_cast<uint8_t*>(&cloud_in->points[i].y);
-                for(i=0;i<3;i++)
+                point_binary[0], point_binary[1], point_binary[2], point_binary[3] = floattoeight(cloud_in->points[i].y);
+                for (i = 0; i < 4; i++)
                 {
                     points.push_back(point_binary[i]);
                 }
-                point_binary = reinterpret_cast<uint8_t*>(&cloud_in->points[i].z);
-                for(i=0;i<3;i++)
+                point_binary[0], point_binary[1], point_binary[2], point_binary[3] = floattoeight(cloud_in->points[i].z);
+                for (i = 0; i < 4; i++)
                 {
                     points.push_back(point_binary[i]);
                 }
-                point_binary = reinterpret_cast<uint8_t*>(&cloud_normals->points[i].curvature);
-                for(i=0;i<3;i++)
+                point_binary[0], point_binary[1], point_binary[2], point_binary[3] = floattoeight(cloud_normals->points[i].curvature);
+                for (i = 0; i < 4; i++)
                 {
                     points.push_back(point_binary[i]);
                 }
@@ -342,8 +355,6 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
         cloud_out->data = points;
         cloud_out->point_step = 4;
         cloud_out->row_step = 900;
-        
-
 
         // std::cout << "size_in" << cloud_in->points.size() << "size_norm" << cloud_normals->points.size() << "\n" ;
         // point_cloud_pub.publish(output_ground);
@@ -352,8 +363,6 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
     // std::cout << marker.points.size() << "cloud" << cloud_in->points.size() << "\n";
     point_cloud_out_pub.publish(cloud_out);
 
-    //extract
-    pcl::ExtractIndices<PointT> extract;
 
     // plane model
     /*coefficients->values.resize(4);
@@ -361,6 +370,16 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
   seg.setOptimizeCoefficients(true);
   seg.setModelType(pcl::SACMODEL_PLANE);
   seg.setDistanceThreshold(0.05);*/
+
+
+
+
+    /*
+
+    //extract
+    pcl::ExtractIndices<PointT> extract;
+
+
 
     // plane normal model
     pcl::SACSegmentationFromNormals<PointT, PointNT> seg;
@@ -393,7 +412,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
         extract.filter(*cloud_outliers);
         pcl::toROSMsg(*cloud_outliers, *output_plants);
         // point_cloud_out_pub.publish(output_plants);
-    }
+    } */
 }
 
 int main(int argc, char *argv[])
@@ -409,6 +428,7 @@ int main(int argc, char *argv[])
     vis_pub = nh.advertise<visualization_msgs::Marker>("visualization_marker", 1, true);
     point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud_ground", 1, true);
     point_cloud_out_pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud_plants", 1, true);
+
 
     ros::spin();
 }
