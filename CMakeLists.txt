@@ -23,7 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
 )
 
-##find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(PCL 1.3 REQUIRED)
 
 ## System dependencies are found with CMake's conventions

@@ -1,8 +1,11 @@
 <launch>
 
-<!--node name="myproject1_node" pkg="myproject1" type="myproject1_node" output="screen" /--> *
+    <!--node name="myproject1_node" pkg="myproject1" type="myproject1_node" output="screen" /--> *
 
-<node name="transform1_node" pkg="myproject1" type="transform1_node" output="screen" >
-    <param name="decay_size" value="20" />
-</node>
+    <node name="transform1_node" pkg="myproject1" type="transform1_node" output="screen">
+        <param name="decay_size" value="45" />
+        <param name="x_box" value="16" />
+        <param name="y_box" value="10" />
+        <param name="z_box" value="1.5" />
+    </node>
 </launch>

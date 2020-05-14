@@ -1,3 +1,0 @@
-<launch>
-    <node pkg="rosbag" type="play" name="player" output="screen" args="--clock -l /home/srbh/agrirobo_proj/with_pcls/integrated_pcl.bag"/>
-</launch>

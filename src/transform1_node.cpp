@@ -7,6 +7,7 @@
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl/filters/crop_box.h>
 #include <math.h>
 #include <nav_msgs/Odometry.h>
 #include <message_filters/subscriber.h>
@@ -26,24 +27,53 @@ std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT>> sourceClouds;
 tf::TransformListener *listener;
 tf::TransformBroadcaster *br;
 int decay_size;
+float x_box, y_box, z_box;
 sensor_msgs::PointCloud2::Ptr output_cloud(new sensor_msgs::PointCloud2);
 
 
+PointCloud::Ptr crop_pcl(PointCloud::Ptr cloud_in)
+{
+    PointCloud::Ptr cloud_inter(new PointCloud);
+    pcl::CropBox<PointT> cropBoxFilter(true);
+    cropBoxFilter.setInputCloud(cloud_in);
+    Eigen::Vector4f min_pt(-x_box/2, -y_box/2, -z_box/2, 1.0f);
+    Eigen::Vector4f max_pt(x_box/2, y_box/2, z_box/2, 1.0f);
+
+    // Cropbox slighlty bigger then bounding box of points
+    cropBoxFilter.setMin(min_pt);
+    cropBoxFilter.setMax(max_pt);
+
+    // Indices
+    std::vector<int> indices;
+    cropBoxFilter.filter(indices);
+
+    // Cloud
+   
+    cropBoxFilter.filter(*cloud_inter);
+    return cloud_inter;
+
+}
+
 void callback(const sensor_msgs::PointCloud2ConstPtr &cloud) //const nav_msgs::Odometry::ConstPtr& odom1
 {
+
     tf::StampedTransform transform;
     PointCloud::Ptr cloud_in(new PointCloud);
+    
+
     PointCloud::Ptr cloud_out(new PointCloud);
     PointCloud::Ptr cloud_result(new PointCloud);
 
+    pcl::fromROSMsg(*cloud, *cloud_in);
 
+    PointCloud::Ptr cloud_inter = crop_pcl(cloud_in);
+    cloud_inter->header = cloud_in->header;
     //pcl::SynchronizedQueue < PointCloud> sourceClouds;
     //std::vector < PointCloud::Ptr, Eigen::aligned_allocator <PointCloud ::Ptr > > sourceClouds;
     //std::vector<pcl::PointCloud<pcl::PointXYZ>, Eigen::aligned_allocator<pcl::PointXYZ> > sourceClouds;
 
-    pcl::fromROSMsg(*cloud, *cloud_in);
     //point_cloud_pub.publish(*cloud_in);
-    sourceClouds.push_back(cloud_in);
+    sourceClouds.push_back(cloud_inter);
     //std::cout << sourceClouds.size() << "\n";
     //ROS_INFO_STREAM(ros::Time::now());
 
@@ -52,8 +82,8 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud) //const nav_msgs::O
 
         int i = sourceClouds.size() - 1;
         *cloud_result = *sourceClouds[i];
-
         cloud_result->header = sourceClouds[i]->header;
+        
         for (int j = 0; j < i; j++)
         {
             try
@@ -112,6 +142,10 @@ int main(int argc, char *argv[])
     sync.registerCallback(boost::bind(&callback, _1, _2));*/
 
     nh.getParam("/transform1_node/decay_size", decay_size);
+    nh.getParam("/transform1_node/x_box", x_box);
+    nh.getParam("/transform1_node/y_box", y_box);
+    nh.getParam("/transform1_node/z_box", z_box);
+
 
     // Create a ROS node handle
 
