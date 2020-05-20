@@ -21,6 +21,7 @@
 
 ros::Publisher point_cloud_pub;
 ros::Publisher point_cloud_out_pub;
+ros::Publisher point_cloud_curv_pub;
 ros::Publisher vis_pub;
 
 typedef pcl::PointXYZ PointT;
@@ -368,7 +369,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
         cloud_out->row_step = counter;
     }
 
-    point_cloud_out_pub.publish(cloud_out);
+    point_cloud_curv_pub.publish(cloud_out);
     vis_pub.publish(marker);
 
     // plane model
@@ -378,7 +379,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
   seg.setModelType(pcl::SACMODEL_PLANE);
   seg.setDistanceThreshold(0.05);*/
 
-    /*
+    
 
     //extract
     pcl::ExtractIndices<PointT> extract;
@@ -411,12 +412,12 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
         extract.setNegative(false); // Extract the inliers
         extract.filter(*cloud_inliers);
         pcl::toROSMsg(*cloud_inliers, *output_ground); // cloud_inliers contains the plane
-        point_cloud_pub.publish(output_ground);
+        point_cloud_out_pub.publish(output_ground);
         extract.setNegative(true); // Extract the outliers
         extract.filter(*cloud_outliers);
         pcl::toROSMsg(*cloud_outliers, *output_plants);
-        // point_cloud_out_pub.publish(output_plants);
-    } */
+        point_cloud_pub.publish(output_plants);
+    } 
 }
 
 int main(int argc, char *argv[])
@@ -430,8 +431,10 @@ int main(int argc, char *argv[])
 
     ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/point_cloud_decay", 10, callback);
     vis_pub = nh.advertise<visualization_msgs::Marker>("visualization_marker", 1, true);
-    //point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud_ground", 1, true);
+    point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud_ground", 10, true);
     point_cloud_out_pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud_plants", 10, true);
+    point_cloud_curv_pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud_curv", 10, true);
+
 
     ros::spin();
 }

@@ -166,7 +166,7 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node src/myproject1_node.cpp)
-add_executable(transform1_node src/transform1_node.cpp)
+add_executable(pcl_integrator_node src/pcl_integrator_node.cpp)
 add_executable(ransac_node src/ransac_node.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -180,7 +180,7 @@ add_executable(ransac_node src/ransac_node.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} ${OpenCV_LIBS})
-target_link_libraries(transform1_node  ${catkin_LIBRARIES})
+target_link_libraries(pcl_integrator_node  ${catkin_LIBRARIES})
 target_link_libraries(ransac_node  ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 #############
 ## Install ##
