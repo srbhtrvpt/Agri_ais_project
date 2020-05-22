@@ -2,10 +2,10 @@
 
     <!--node name="myproject1_node" pkg="myproject1" type="myproject1_node" output="screen" /--> *
 
-    <node name="transform1_node" pkg="myproject1" type="transform1_node" output="screen">
+    <node name="pcl_integrator_node" pkg="myproject1" type="pcl_integrator_node" output="screen">
         <param name="decay_size" value="60" />
-        <param name="x_box" value="16" />
-        <param name="y_box" value="10" />
-        <param name="z_box" value="1.5" />
+        <param name="area_box" value="48" />
+        <param name="offset_x" value="0" />
+        <param name="offset_y" value="0" />
     </node>
 </launch>

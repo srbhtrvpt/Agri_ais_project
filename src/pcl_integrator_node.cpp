@@ -27,7 +27,7 @@ std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT>> sourceClouds;
 tf::TransformListener *listener;
 tf::TransformBroadcaster *br;
 int decay_size;
-float x_box, y_box, z_box;
+float area_box, offset_x, offset_y, x_box, y_box;
 sensor_msgs::PointCloud2::Ptr output_cloud(new sensor_msgs::PointCloud2);
 
 
@@ -36,8 +36,9 @@ PointCloud::Ptr crop_pcl(PointCloud::Ptr cloud_in)
     PointCloud::Ptr cloud_inter(new PointCloud);
     pcl::CropBox<PointT> cropBoxFilter(true);
     cropBoxFilter.setInputCloud(cloud_in);
-    Eigen::Vector4f min_pt(-x_box/2, -y_box/2, -z_box/2, 1.0f);
-    Eigen::Vector4f max_pt(x_box/2, y_box/2, z_box/2, 1.0f);
+
+    Eigen::Vector4f min_pt(-x_box, -y_box, -2.0, 1.0f);
+    Eigen::Vector4f max_pt(x_box, y_box, 2.0, 1.0f);
 
     // Cropbox slighlty bigger then bounding box of points
     cropBoxFilter.setMin(min_pt);
@@ -124,7 +125,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud) //const nav_msgs::O
 int main(int argc, char *argv[])
 {
     // This must be called before anything else ROS-related
-    ros::init(argc, argv, "transform1_node");
+    ros::init(argc, argv, "pcl_integrator_node");
 
     /*tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener tfListener(tfBuffer);
@@ -141,10 +142,14 @@ int main(int argc, char *argv[])
     Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), odom_sub, cloud_sub);
     sync.registerCallback(boost::bind(&callback, _1, _2));*/
 
-    nh.getParam("/transform1_node/decay_size", decay_size);
-    nh.getParam("/transform1_node/x_box", x_box);
-    nh.getParam("/transform1_node/y_box", y_box);
-    nh.getParam("/transform1_node/z_box", z_box);
+    nh.getParam("/pcl_integrator_node/decay_size", decay_size);
+    nh.getParam("/pcl_integrator_node/area_box", area_box);
+    nh.getParam("/pcl_integrator_node/offset_x", offset_x);
+    nh.getParam("/pcl_integrator_node/offset_y", offset_y);
+
+    x_box = sqrt((4*area_box)/3) + offset_x;
+    y_box = sqrt((3*area_box)/4) + offset_y;
+
 
 
     // Create a ROS node handle

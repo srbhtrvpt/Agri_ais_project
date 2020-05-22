@@ -109,7 +109,6 @@ std::vector<uint8_t> floattoeight(float argn)
     (unsigned char)bytes[2],
     (unsigned char)bytes[3]); */
 
-
     std::vector<uint8_t> point_bin(4);
 
     union {
@@ -148,6 +147,9 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
     marker.scale.x = 0.01;
     marker.pose.orientation.w = 1.0;
 
+
+    float curv_max = 0, curv_min = 1, curv_avg = 0;
+
     // std::cout << cloud_in->header.frame_id;
     // ros::Time now(cloud_in->header.stamp / 1e6, fmod(cloud_in->header.stamp, 1e6));
     // std::cout << cloud_in->points.size() << "......" << cloud_in->width << "......" << cloud_in->height  << "......" <<
@@ -155,8 +157,6 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
 
     if (cloud_in->isOrganized())
     {
-        float curv_max = 0, curv_min = 1, curv_avg = 0;
-
         for (int rr = 0; rr < cloud_in->height; rr++)
         {
             for (int cc = 0; cc < cloud_in->width; cc++)
@@ -242,7 +242,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
         pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>());
         ne.setSearchMethod(tree);
         // ne.setRadiusSearch(0.3);
-        ne.setKSearch(25);
+        ne.setKSearch(16);
         ne.compute(*cloud_normals);
         /*std::vector<int> map1;
         cloud_normals->is_dense = false;
@@ -296,10 +296,11 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
 
             if (isfinite(cloud_in->points[i].x) && isfinite(cloud_in->points[i].y) && isfinite(cloud_in->points[i].z) &&
                 isfinite(cloud_normals->points[i].normal_z) && isfinite(cloud_normals->points[i].normal_y) &&
-                isfinite(cloud_normals->points[i].normal_x) && cloud_normals->points[i].curvature)
-            {   
+                isfinite(cloud_normals->points[i].normal_x) && isfinite(cloud_normals->points[i].curvature))
+            {
                 counter++;
-                if (cloud_normals->points[i].curvature < 0.00275)
+                curvature = cloud_normals->points[i].curvature;
+                if (curvature < 0.00275)
                 {
                     color.r = 1.0;
                     color.g = 0.0;
@@ -316,9 +317,9 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
                 p.z = cloud_in->points[i].z;
                 marker.points.push_back(p);
                 marker.colors.push_back(color);
-                p.z += cloud_normals->points[i].normal_z;
-                p.y += cloud_normals->points[i].normal_y;
-                p.x += cloud_normals->points[i].normal_x;
+                p.z += cloud_normals->points[i].normal_z / 30;
+                p.y += cloud_normals->points[i].normal_y / 30;
+                p.x += cloud_normals->points[i].normal_x / 30;
                 marker.points.push_back(p);
                 marker.colors.push_back(color);
                 //std::cout << "x" <<  cloud_in->points[i].x << "x" <<  cloud_in->points[i].y << "x" <<  cloud_in->points[i].z << "i" << i << std::endl;
@@ -373,26 +374,22 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
     vis_pub.publish(marker);
 
     // plane model
-    /*coefficients->values.resize(4);
-  pcl::SACSegmentation<PointT> seg;
-  seg.setOptimizeCoefficients(true);
-  seg.setModelType(pcl::SACMODEL_PLANE);
-  seg.setDistanceThreshold(0.05);*/
-
-    
-
+    /*
+    coefficients->values.resize(4);
+    pcl::SACSegmentation<PointT> seg;
+    seg.setOptimizeCoefficients(true);
+    seg.setModelType(pcl::SACMODEL_PLANE);
+    seg.setDistanceThreshold(0.05); */
     //extract
     pcl::ExtractIndices<PointT> extract;
-
-
 
     // plane normal model
     pcl::SACSegmentationFromNormals<PointT, PointNT> seg;
     seg.setOptimizeCoefficients(true);
     seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);
-    seg.setNormalDistanceWeight(0.1);
+    seg.setNormalDistanceWeight(0.02);
     seg.setDistanceThreshold(0.05);
-    seg.setInputNormals(cloud_normals);
+    seg.setInputNormals(cloud_normals); 
 
     seg.setMethodType(pcl::SAC_RANSAC);
     seg.setInputCloud(cloud_in);
@@ -417,7 +414,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
         extract.filter(*cloud_outliers);
         pcl::toROSMsg(*cloud_outliers, *output_plants);
         point_cloud_pub.publish(output_plants);
-    } 
+    }
 }
 
 int main(int argc, char *argv[])
@@ -434,7 +431,6 @@ int main(int argc, char *argv[])
     point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud_ground", 10, true);
     point_cloud_out_pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud_plants", 10, true);
     point_cloud_curv_pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud_curv", 10, true);
-
 
     ros::spin();
 }
