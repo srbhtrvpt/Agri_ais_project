@@ -19,21 +19,30 @@
 //#include <pcl/io/impl/synchronized_queue.hpp>
 
 using namespace message_filters;
-ros::Publisher point_cloud_pub;
+
 typedef pcl::PointXYZI PointT;
 typedef pcl::PointCloud<PointT> PointCloud;
-std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT>> sourceClouds;
-//std::vector < PointCloud, Eigen::aligned_allocator <PointT> > sourceClouds;
-tf::TransformListener *listener;
-tf::TransformBroadcaster *br;
+
+// ros parameters
 int decay_size;
 float area_box, offset_x, offset_y, x_box, y_box;
-sensor_msgs::PointCloud2::Ptr output_cloud(new sensor_msgs::PointCloud2);
 
+std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT> > sourceClouds;
+tf::TransformListener *listener;
+//tf::TransformBroadcaster *br;
 
-PointCloud::Ptr crop_pcl(PointCloud::Ptr cloud_in)
+ros::Publisher point_cloud_pub;
+
+PointCloud::Ptr crop_pcl(PointCloud::Ptr cloud_in)    
 {
+    // ensure that cloud is in correct frame???
+    // ie base_footprint???
+    
     PointCloud::Ptr cloud_inter(new PointCloud);
+    // why use this filter? just write your own "crop"
+    // you are introducing constraints on z, that we do not want!
+    // (setting z range implicitly to [-2,2])
+    // not a nice behavior of your code!!!
     pcl::CropBox<PointT> cropBoxFilter(true);
     cropBoxFilter.setInputCloud(cloud_in);
 
@@ -58,6 +67,15 @@ PointCloud::Ptr crop_pcl(PointCloud::Ptr cloud_in)
 void callback(const sensor_msgs::PointCloud2ConstPtr &cloud) //const nav_msgs::Odometry::ConstPtr& odom1
 {
 
+    // Better approach:
+    // 1) transform incoming pcls into odom frame
+    // 2) store them in your deque
+    // 3) pop deque until size <= decay_size
+    // 4) integrate pcls
+    // 5) transform result pcl into target frame (= base_footprint?)
+    // 6) crop using detection window parameters (make it optional using a ros parameter)
+    // 7) publish the resulting pcl
+
     tf::StampedTransform transform;
     PointCloud::Ptr cloud_in(new PointCloud);
     
@@ -81,9 +99,9 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud) //const nav_msgs::O
     if (sourceClouds.size() >= decay_size)
     {
 
-        int i = sourceClouds.size() - 1;
-        *cloud_result = *sourceClouds[i];
-        cloud_result->header = sourceClouds[i]->header;
+        int i = sourceClouds.size() - 1; // why not pop the front here and then iterate over the whole queue?
+        *cloud_result = *sourceClouds[i]; // here you already copy the data into cloud_result...
+        cloud_result->header = sourceClouds[i]->header; // so this is unnecessary
         
         for (int j = 0; j < i; j++)
         {
@@ -93,14 +111,14 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud) //const nav_msgs::O
                 //std::cout << sourceClouds[j]->header.stamp << "------" << j << "\n";
 
                 //int x = ;
-                ros::Time now(sourceClouds[i]->header.stamp / 1e6, fmod(sourceClouds[i]->header.stamp, 1e6));
-                ros::Time past(sourceClouds[j]->header.stamp / 1e6, fmod(sourceClouds[j]->header.stamp, 1e6));
+                ros::Time now(sourceClouds[i]->header.stamp / 1e6, fmod(sourceClouds[i]->header.stamp, 1e6)); // this seems unnecessary...
+                ros::Time past(sourceClouds[j]->header.stamp / 1e6, fmod(sourceClouds[j]->header.stamp, 1e6)); // this seems unnecessary...
                 /*listener->waitForTransform(sourceClouds[i].header.frame_id, now,
                               sourceClouds[j].header.frame_id, past,
                                odom1->header.frame_id, ros::Duration(0.01)); */
                 listener->lookupTransform(sourceClouds[i]->header.frame_id, now,
                                           sourceClouds[j]->header.frame_id, past,
-                                          "odom", transform);
+                                          "odom", transform); // this can block for some time and make your code very slow!!!
             }
             catch (std::runtime_error &ex)
             {
@@ -118,7 +136,9 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud) //const nav_msgs::O
     {    
     }*/
     //std::cout << "header" << cloud_result->header.frame_id ;
-    pcl::toROSMsg(*cloud_result, *output_cloud);
+    
+    sensor_msgs::PointCloud2 output_cloud;
+    pcl::toROSMsg(*cloud_result, output_cloud);
     point_cloud_pub.publish(output_cloud);
 }
 
@@ -133,7 +153,8 @@ int main(int argc, char *argv[])
     static tf2_ros::TransformBroadcaster br2; */
     ros::NodeHandle nh;
     listener = new tf::TransformListener();
-    br = new tf::TransformBroadcaster();
+    // br = new tf::TransformBroadcaster(); // you do not need that...
+    
     /*message_filters::Subscriber<nav_msgs::Odometry> odom_sub(nh, "/robot/odom", 1000);
     message_filters::Subscriber<sensor_msgs::PointCloud2> cloud_sub(nh, "/sensor/laser/vlp16/front/pointcloud_xyzi", 1000);
     typedef sync_policies::ApproximateTime<nav_msgs::Odometry, sensor_msgs::PointCloud2> MySyncPolicy;
@@ -147,16 +168,13 @@ int main(int argc, char *argv[])
     nh.getParam("/pcl_integrator_node/offset_x", offset_x);
     nh.getParam("/pcl_integrator_node/offset_y", offset_y);
 
-    x_box = sqrt((4*area_box)/3) + offset_x;
-    y_box = sqrt((3*area_box)/4) + offset_y;
-
+    x_box = sqrt((4*area_box)/3) + offset_x; // why so complicated?
+    y_box = sqrt((3*area_box)/4) + offset_y; // just implement your own crop function!!!
 
 
     // Create a ROS node handle
-
-    ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/sensor/laser/vlp16/front/pointcloud_xyzi", 100, callback);
-
-    point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud_decay", 1, true);
+    ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback); // 100 in buffer is a bit much?
+    point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("output_cloud", 1, true); // you can use remap in the launch file to set the correct runtime topics!
     ros::spin();
 }
 

@@ -7,5 +7,7 @@
         <param name="area_box" value="48" />
         <param name="offset_x" value="0" />
         <param name="offset_y" value="0" />
+        <remap from="input_cloud" to="/sensor/laser/vlp16/front/pointcloud_xyzi"/>
+        <remap from="output_cloud" to="/sensor/laser/vlp16/front/integrated_pointcloud_xyzi"/>
     </node>
 </launch>
