@@ -72,7 +72,10 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node src/myproject1_node.cpp)
 
-add_executable(pcl_integrator_node src/pcl_integrator_node.cpp)
+add_executable(pcl_integrator_node
+  src/pcl_integrator_node.cpp
+  #window.cpp
+  )
 
 add_executable(ransac_node src/ransac_node.cpp)
 
