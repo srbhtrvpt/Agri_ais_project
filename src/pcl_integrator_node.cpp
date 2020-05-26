@@ -25,57 +25,133 @@ typedef pcl::PointCloud<PointT> PointCloud;
 
 // ros parameters
 int decay_size;
-float area_box, offset_x, offset_y, x_box, y_box;
+int max_buffer_size = 20;
+//float area_box, offset_x, offset_y, x_box, y_box;
+
+float size_x = 8.f;
+float size_y = 6.f;
+float offset_x = 1.f;
+float offset_y = 0.f;
+
+bool crop_flag = true;
+std::string fixed_frame = "odom";
+std::string base_footprint = "base_footprint";
+std::string target_frame = base_footprint;
 
 std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT> > sourceClouds;
+
+std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT> > cloud_buffer;
+
+
 tf::TransformListener *listener;
 //tf::TransformBroadcaster *br;
 
 ros::Publisher point_cloud_pub;
 
-PointCloud::Ptr crop_pcl(PointCloud::Ptr cloud_in)    
+
+ros::Time to_ros_time(pcl::uint64_t stamp);
+bool transform_pointcloud(PointCloud& cloud, std::string frame_id);
+
+//const Window window(offset_x, ...);
+// window.is_inside(p);
+
+bool is_inside(const PointT& p)
 {
-    // ensure that cloud is in correct frame???
-    // ie base_footprint???
+    float min_x = offset_x;
+    float max_x = offset_x + size_x;
+    float min_y = offset_y - 0.5*size_y;
+    float max_y = offset_y + 0.5*size_y;
     
-    PointCloud::Ptr cloud_inter(new PointCloud);
-    // why use this filter? just write your own "crop"
-    // you are introducing constraints on z, that we do not want!
-    // (setting z range implicitly to [-2,2])
-    // not a nice behavior of your code!!!
-    pcl::CropBox<PointT> cropBoxFilter(true);
-    cropBoxFilter.setInputCloud(cloud_in);
+    return (p.x >= min_x && p.x <= max_x) && (p.y >= min_y && p.y <= max_y);
+}
+        
 
-    Eigen::Vector4f min_pt(-x_box, -y_box, -2.0, 1.0f);
-    Eigen::Vector4f max_pt(x_box, y_box, 2.0, 1.0f);
+PointCloud::Ptr crop_pcl(PointCloud::Ptr cloud)    
+{
+    if(cloud->header.frame_id.compare(base_footprint) != 0){
+        ROS_ERROR("transforming cloud for cropping");
+        transform_pointcloud(*cloud, base_footprint);
+    }
 
-    // Cropbox slighlty bigger then bounding box of points
-    cropBoxFilter.setMin(min_pt);
-    cropBoxFilter.setMax(max_pt);
+    PointCloud::Ptr result(new PointCloud);
+    result->header = cloud->header;
+    for(size_t i = 0; i < cloud->size(); ++i){
+        const PointT& p = (*cloud)[i];
+        if(is_inside(p)){
+            result->push_back(p);
+        }
+    }
+    return result;
+}
 
-    // Indices
-    std::vector<int> indices;
-    cropBoxFilter.filter(indices);
+ros::Time to_ros_time(pcl::uint64_t stamp)
+{
+    return ros::Time(stamp * 1e-6, fmod(stamp, 1e6));
+}
 
-    // Cloud
-   
-    cropBoxFilter.filter(*cloud_inter);
-    return cloud_inter;
+bool transform_pointcloud(PointCloud& cloud, std::string frame_id)
+{
+    tf::StampedTransform transform;
+    bool success = true;
+    try
+    {
+        listener->lookupTransform(frame_id, cloud.header.frame_id, to_ros_time(cloud.header.stamp), transform);
+    }
+    catch (std::runtime_error &ex)
+    {
+        ROS_ERROR("%s", ex.what());
+        success = false;
+    }
+    if(!success){
+        return false;
+    }
+    PointCloud copy_cloud = cloud;
+    pcl_ros::transformPointCloud(copy_cloud, cloud, transform);// check if header is correct after transforming
+    cloud.header.frame_id = frame_id;        
+    ROS_ERROR("input frame id: %s, output frame_id: %s", copy_cloud.header.frame_id.c_str(), cloud.header.frame_id.c_str());
+    return true;
+}
 
+void callback2(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
+{
+    PointCloud::Ptr cloud(new PointCloud);
+    pcl::fromROSMsg(*cloud_ros, *cloud);
+
+    ROS_ERROR("transforming cloud");
+    if(!transform_pointcloud(*cloud, fixed_frame)){
+        ROS_ERROR("%s: cannot transform incoming pcl to fixed frame %s.", __func__, fixed_frame.c_str());
+        return;
+    }
+    ROS_ERROR("pushing cloud with frame_id %s", cloud->header.frame_id.c_str());
+    cloud_buffer.push_back(cloud);
+
+    int buffer_size = std::max(max_buffer_size, 1);
+    
+    while(cloud_buffer.size() > buffer_size){
+        cloud_buffer.pop_front();
+    }
+
+    PointCloud::Ptr integrated_cloud(new PointCloud);
+    for(size_t i = 0; i < cloud_buffer.size(); ++i){
+        *integrated_cloud += *(cloud_buffer[i]);
+        //const PointCloud& cld = *(cloud_buffer[i]);
+        //integrated_cloud->insert(integrated_cloud->end(), cld.begin(), cld.end());
+    }
+    if(!cloud_buffer.empty()){
+        integrated_cloud->header = cloud_buffer.back()->header;
+        if(crop_flag){
+            integrated_cloud = crop_pcl(integrated_cloud);
+        }
+        if(integrated_cloud->header.frame_id.compare(target_frame) != 0){
+            ROS_ERROR("transforming integrated_cloud");
+            transform_pointcloud(*integrated_cloud, target_frame);
+        }
+        point_cloud_pub.publish(integrated_cloud);
+    }    
 }
 
 void callback(const sensor_msgs::PointCloud2ConstPtr &cloud) //const nav_msgs::Odometry::ConstPtr& odom1
 {
-
-    // Better approach:
-    // 1) transform incoming pcls into odom frame
-    // 2) store them in your deque
-    // 3) pop deque until size <= decay_size
-    // 4) integrate pcls
-    // 5) transform result pcl into target frame (= base_footprint?)
-    // 6) crop using detection window parameters (make it optional using a ros parameter)
-    // 7) publish the resulting pcl
-
     tf::StampedTransform transform;
     PointCloud::Ptr cloud_in(new PointCloud);
     
@@ -119,6 +195,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud) //const nav_msgs::O
                 listener->lookupTransform(sourceClouds[i]->header.frame_id, now,
                                           sourceClouds[j]->header.frame_id, past,
                                           "odom", transform); // this can block for some time and make your code very slow!!!
+                // also if the point cloud is too old, there is no transform in the buffer anymore... and probably that's why the pcl is so sparse...
             }
             catch (std::runtime_error &ex)
             {
@@ -164,16 +241,17 @@ int main(int argc, char *argv[])
     sync.registerCallback(boost::bind(&callback, _1, _2));*/
 
     nh.getParam("/pcl_integrator_node/decay_size", decay_size);
-    nh.getParam("/pcl_integrator_node/area_box", area_box);
-    nh.getParam("/pcl_integrator_node/offset_x", offset_x);
-    nh.getParam("/pcl_integrator_node/offset_y", offset_y);
+    //nh.getParam("/pcl_integrator_node/area_box", area_box);
+    //nh.getParam("/pcl_integrator_node/offset_x", offset_x);
+    //nh.getParam("/pcl_integrator_node/offset_y", offset_y);
 
-    x_box = sqrt((4*area_box)/3) + offset_x; // why so complicated?
-    y_box = sqrt((3*area_box)/4) + offset_y; // just implement your own crop function!!!
+    //x_box = sqrt((4*area_box)/3) + offset_x; // why so complicated?
+    //y_box = sqrt((3*area_box)/4) + offset_y; // just implement your own crop function!!!
 
 
     // Create a ROS node handle
-    ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback); // 100 in buffer is a bit much?
+    //ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback); // 100 in buffer is a bit much?
+    ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback2); // 100 in buffer is a bit much?
     point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("output_cloud", 1, true); // you can use remap in the launch file to set the correct runtime topics!
     ros::spin();
 }
