@@ -42,16 +42,11 @@ std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT> > sourceClouds;
 
 std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT> > cloud_buffer;
 
-ros::Time current_stamp;
-
 tf::TransformListener *listener;
 //tf::TransformBroadcaster *br;
 
 ros::Publisher point_cloud_pub;
 
-
-ros::Time to_ros_time(pcl::uint64_t stamp);
-bool transform_pointcloud(PointCloud& cloud, std::string frame_id);
 
 //const Window window(offset_x, ...);
 // window.is_inside(p);
@@ -71,7 +66,9 @@ PointCloud::Ptr crop_pcl(PointCloud::Ptr cloud)
 {
     if(cloud->header.frame_id.compare(base_footprint) != 0){
         //ROS_ERROR("transforming cloud for cropping");
-        transform_pointcloud(*cloud, base_footprint);
+        if(!pcl_ros::transformPointCloud(base_footprint, *cloud, *cloud, *listener)){
+            return cloud;
+        }
     }
 
     PointCloud::Ptr result(new PointCloud);
@@ -85,59 +82,20 @@ PointCloud::Ptr crop_pcl(PointCloud::Ptr cloud)
     return result;
 }
 
-/// DO NOT USE THIS, not enough accuracy!!!
-/// just remember original time stamp from pointcloud2 msg as "current_stamp"
-ros::Time to_ros_time(pcl::uint64_t stamp)
-{
-    ros::Time t(stamp * 1e-6, fmod(stamp, 1e6)*1e3); // need to convert musec to nsec
-    //ROS_ERROR("converted ROS time: %.9f", t.toSec());
-    
-    return ros::Time(stamp * 1e-6, fmod(stamp, 1e6));
-}
-
-bool transform_pointcloud(PointCloud& cloud, std::string frame_id)
-{
-    tf::StampedTransform transform;
-    bool success = true;
-    try
-    {
-        //listener->lookupTransform(frame_id, cloud.header.frame_id, to_ros_time(cloud.header.stamp), transform);
-        listener->lookupTransform(frame_id, cloud.header.frame_id, current_stamp, transform);
-    }
-    catch (std::runtime_error &ex)
-    {
-        ROS_ERROR("%s", ex.what());
-        success = false;
-    }
-    if(!success){
-        return false;
-    }
-    PointCloud copy_cloud = cloud;
-    pcl_ros::transformPointCloud(copy_cloud, cloud, transform);// check if header is correct after transforming
-    cloud.header.frame_id = frame_id;        
-    //ROS_ERROR("input frame id: %s, output frame_id: %s", copy_cloud.header.frame_id.c_str(), cloud.header.frame_id.c_str());
-    return true;
-}
-
 void callback2(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
 {
-    //ROS_ERROR("ROS timestamp: %.9f", cloud_ros->header.stamp.toSec());
-    current_stamp = cloud_ros->header.stamp;
-    
-    if(!cloud_buffer.empty() && to_ros_time(cloud_buffer.back()->header.stamp).toSec() == fmod(cloud_ros->header.stamp.toSec(),1e3)*1e3){
+    PointCloud::Ptr cloud(new PointCloud);
+    pcl::fromROSMsg(*cloud_ros, *cloud);
+
+    if(!cloud_buffer.empty() && cloud_buffer.back()->header.stamp == cloud->header.stamp){
         // ignore same point cloud (timestamp wise)
         return;
     }
     
-    PointCloud::Ptr cloud(new PointCloud);
-    pcl::fromROSMsg(*cloud_ros, *cloud);
-
-    //ROS_ERROR("transforming cloud");
-    if(!transform_pointcloud(*cloud, fixed_frame)){
+    if(!pcl_ros::transformPointCloud(fixed_frame, *cloud, *cloud, *listener)){
         ROS_ERROR("%s: cannot transform incoming pcl to fixed frame %s.", __func__, fixed_frame.c_str());
         return;
     }
-    //ROS_ERROR("pushing cloud with frame_id %s", cloud->header.frame_id.c_str());
     cloud_buffer.push_back(cloud);
 
     int buffer_size = std::max(max_buffer_size, 1);
@@ -152,22 +110,18 @@ void callback2(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     PointCloud::Ptr integrated_cloud(new PointCloud);
     for(size_t i = 0; i < cloud_buffer.size(); ++i){
         *integrated_cloud += *(cloud_buffer[i]);
-        //const PointCloud& cld = *(cloud_buffer[i]);
-        //integrated_cloud->insert(integrated_cloud->end(), cld.begin(), cld.end());
     }
     integrated_cloud->header = cloud_buffer.back()->header;
     if(crop_flag){
         integrated_cloud = crop_pcl(integrated_cloud);
     }
     if(integrated_cloud->header.frame_id.compare(target_frame) != 0){
-        //ROS_ERROR("transforming integrated_cloud");
-        transform_pointcloud(*integrated_cloud, target_frame);
+        if(!pcl_ros::transformPointCloud(target_frame, *integrated_cloud, *integrated_cloud, *listener)){
+            ROS_ERROR("transforming integrated cloud into target_frame %s", target_frame.c_str());
+            return;
+        }
     }
-
-    sensor_msgs::PointCloud2 integrated_cloud_ros;
-    pcl::toROSMsg(*integrated_cloud, integrated_cloud_ros);
-    integrated_cloud_ros.header.stamp = current_stamp;
-    point_cloud_pub.publish(integrated_cloud_ros);
+    point_cloud_pub.publish(integrated_cloud);
 }
 
 void callback(const sensor_msgs::PointCloud2ConstPtr &cloud) //const nav_msgs::Odometry::ConstPtr& odom1
