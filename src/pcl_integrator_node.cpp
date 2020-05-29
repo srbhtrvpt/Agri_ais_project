@@ -20,32 +20,33 @@
 
 using namespace message_filters;
 
-ros::Time to_ros_time(pcl::uint64_t stamp);
-bool transform_pointcloud(PointCloud& cloud, std::string frame_id);
-bool is_inside(const PointT& p);
-
 typedef pcl::PointXYZI PointT;
 typedef pcl::PointCloud<PointT> PointCloud;
 
 // ros parameters
-int max_buffer_size;
+int decay_size;
+int max_buffer_size = 20;
 //float area_box, offset_x, offset_y, x_box, y_box;
-float size_x, size_y, offset_x, offset_y;
+
+float size_x = 8.f;
+float size_y = 6.f;
+float offset_x = 1.f;
+float offset_y = 0.f;
+
 bool crop_flag = true;
 std::string fixed_frame = "odom";
 std::string base_footprint = "base_footprint";
 std::string target_frame = base_footprint;
 
-//std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT> > sourceClouds;
+std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT> > sourceClouds;
+
 std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT> > cloud_buffer;
-
-
-ros::Time current_stamp;
 
 tf::TransformListener *listener;
 //tf::TransformBroadcaster *br;
 
 ros::Publisher point_cloud_pub;
+
 
 //const Window window(offset_x, ...);
 // window.is_inside(p);
@@ -123,75 +124,74 @@ void callback2(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     point_cloud_pub.publish(integrated_cloud);
 }
 
-
-// void callback(const sensor_msgs::PointCloud2ConstPtr &cloud) //const nav_msgs::Odometry::ConstPtr& odom1
-// {
-//     tf::StampedTransform transform;
-//     PointCloud::Ptr cloud_in(new PointCloud);
+void callback(const sensor_msgs::PointCloud2ConstPtr &cloud) //const nav_msgs::Odometry::ConstPtr& odom1
+{
+    tf::StampedTransform transform;
+    PointCloud::Ptr cloud_in(new PointCloud);
     
 
-//     PointCloud::Ptr cloud_out(new PointCloud);
-//     PointCloud::Ptr cloud_result(new PointCloud);
+    PointCloud::Ptr cloud_out(new PointCloud);
+    PointCloud::Ptr cloud_result(new PointCloud);
 
-//     pcl::fromROSMsg(*cloud, *cloud_in);
+    pcl::fromROSMsg(*cloud, *cloud_in);
 
-//     PointCloud::Ptr cloud_inter = crop_pcl(cloud_in);
-//     cloud_inter->header = cloud_in->header;
-//     //pcl::SynchronizedQueue < PointCloud> sourceClouds;
-//     //std::vector < PointCloud::Ptr, Eigen::aligned_allocator <PointCloud ::Ptr > > sourceClouds;
-//     //std::vector<pcl::PointCloud<pcl::PointXYZ>, Eigen::aligned_allocator<pcl::PointXYZ> > sourceClouds;
+    PointCloud::Ptr cloud_inter = crop_pcl(cloud_in);
+    cloud_inter->header = cloud_in->header;
+    //pcl::SynchronizedQueue < PointCloud> sourceClouds;
+    //std::vector < PointCloud::Ptr, Eigen::aligned_allocator <PointCloud ::Ptr > > sourceClouds;
+    //std::vector<pcl::PointCloud<pcl::PointXYZ>, Eigen::aligned_allocator<pcl::PointXYZ> > sourceClouds;
 
-//     //point_cloud_pub.publish(*cloud_in);
-//     sourceClouds.push_back(cloud_inter);
-//     //std::cout << sourceClouds.size() << "\n";
-//     //ROS_INFO_STREAM(ros::Time::now());
+    //point_cloud_pub.publish(*cloud_in);
+    sourceClouds.push_back(cloud_inter);
+    //std::cout << sourceClouds.size() << "\n";
+    //ROS_INFO_STREAM(ros::Time::now());
 
-//     if (sourceClouds.size() >= decay_size)
-//     {
+    if (sourceClouds.size() >= decay_size)
+    {
 
-//         int i = sourceClouds.size() - 1; // why not pop the front here and then iterate over the whole queue?
-//         *cloud_result = *sourceClouds[i]; // here you already copy the data into cloud_result...
-//         cloud_result->header = sourceClouds[i]->header; // so this is unnecessary
+        int i = sourceClouds.size() - 1; // why not pop the front here and then iterate over the whole queue?
+        *cloud_result = *sourceClouds[i]; // here you already copy the data into cloud_result...
+        cloud_result->header = sourceClouds[i]->header; // so this is unnecessary
         
-//         for (int j = 0; j < i; j++)
-//         {
-//             try
-//             {
-//                 //std::cout << "now" << sourceClouds[i]->header.stamp << "------" << i << "\n";
-//                 //std::cout << sourceClouds[j]->header.stamp << "------" << j << "\n";
+        for (int j = 0; j < i; j++)
+        {
+            try
+            {
+                //std::cout << "now" << sourceClouds[i]->header.stamp << "------" << i << "\n";
+                //std::cout << sourceClouds[j]->header.stamp << "------" << j << "\n";
 
-//                 //int x = ;
-//                 ros::Time now(sourceClouds[i]->header.stamp / 1e6, fmod(sourceClouds[i]->header.stamp, 1e6)); // this seems unnecessary...
-//                 ros::Time past(sourceClouds[j]->header.stamp / 1e6, fmod(sourceClouds[j]->header.stamp, 1e6)); // this seems unnecessary...
-//                 /*listener->waitForTransform(sourceClouds[i].header.frame_id, now,
-//                               sourceClouds[j].header.frame_id, past,
-//                                odom1->header.frame_id, ros::Duration(0.01)); */
-//                 listener->lookupTransform(sourceClouds[i]->header.frame_id, now,
-//                                           sourceClouds[j]->header.frame_id, past,
-//                                           "odom", transform); // this can block for some time and make your code very slow!!!
-//                 // also if the point cloud is too old, there is no transform in the buffer anymore... and probably that's why the pcl is so sparse...
-//             }
-//             catch (std::runtime_error &ex)
-//             {
-//                 ROS_ERROR("%s", ex.what());
-//             }
-//             pcl_ros::transformPointCloud(*sourceClouds[j], *cloud_out, transform);
-//             *cloud_result += *cloud_out;
-//         }
+                //int x = ;
+                ros::Time now(sourceClouds[i]->header.stamp / 1e6, fmod(sourceClouds[i]->header.stamp, 1e6)); // this seems unnecessary...
+                ros::Time past(sourceClouds[j]->header.stamp / 1e6, fmod(sourceClouds[j]->header.stamp, 1e6)); // this seems unnecessary...
+                /*listener->waitForTransform(sourceClouds[i].header.frame_id, now,
+                              sourceClouds[j].header.frame_id, past,
+                               odom1->header.frame_id, ros::Duration(0.01)); */
+                listener->lookupTransform(sourceClouds[i]->header.frame_id, now,
+                                          sourceClouds[j]->header.frame_id, past,
+                                          "odom", transform); // this can block for some time and make your code very slow!!!
+                // also if the point cloud is too old, there is no transform in the buffer anymore... and probably that's why the pcl is so sparse...
+            }
+            catch (std::runtime_error &ex)
+            {
+                ROS_ERROR("%s", ex.what());
+            }
+            pcl_ros::transformPointCloud(*sourceClouds[j], *cloud_out, transform);
+            *cloud_result += *cloud_out;
+        }
 
-//         sourceClouds.pop_front();
-//         /*assert(!sourceClouds.empty());
-//     sourceClouds.erase(sourceClouds.begin());*/
-//     }
-//     /*if(!cloud_result.empty())
-//     {    
-//     }*/
-//     //std::cout << "header" << cloud_result->header.frame_id ;
+        sourceClouds.pop_front();
+        /*assert(!sourceClouds.empty());
+    sourceClouds.erase(sourceClouds.begin());*/
+    }
+    /*if(!cloud_result.empty())
+    {    
+    }*/
+    //std::cout << "header" << cloud_result->header.frame_id ;
     
-//     sensor_msgs::PointCloud2 output_cloud;
-//     pcl::toROSMsg(*cloud_result, output_cloud);
-//     point_cloud_pub.publish(output_cloud);
-// }
+    sensor_msgs::PointCloud2 output_cloud;
+    pcl::toROSMsg(*cloud_result, output_cloud);
+    point_cloud_pub.publish(output_cloud);
+}
 
 int main(int argc, char *argv[])
 {
@@ -215,33 +215,16 @@ int main(int argc, char *argv[])
     sync.registerCallback(boost::bind(&callback, _1, _2));*/
 
     ros::NodeHandle nhPriv("~");
-    
+    //nhPriv.getParam("decay_size", decay_size);
+    //nhPriv.getParam("area_box", area_box);
+    //nhPriv.getParam("offset_x", offset_x);
+    //nhPriv.getParam("offset_y", offset_y);
 
     if(!nhPriv.getParam("max_buffer_size", max_buffer_size)){
         ROS_ERROR("max_buffer_size was not set!");
         return 1;
     }
-    if(!nhPriv.getParam("size_x", size_x)){
-        size_x = 8.f;
-    }
-    if(!nhPriv.getParam("size_y", size_y)){
-        size_y = 6.f;
-    }
-    if(!nhPriv.getParam("offset_x", offset_x)){
-        offset_x = 1.f;
-    }
-    if(!nhPriv.getParam("offset_y", offset_y)){
-        offset_y = 0.f;
-    }
-    if(!nhPriv.getParam("fixed_frame", fixed_frame)){
-        ROS_ERROR("fixed_frame was not set, setting to default");
-        fixed_frame = "odom";
-    }
-    if(!nhPriv.getParam("base_footprint", base_footprint)){
-        ROS_ERROR("base_footprint was not set, setting to default");
-        base_footprint = "base_footprint";
-    }
-
+    
     //x_box = sqrt((4*area_box)/3) + offset_x; // why so complicated?
     //y_box = sqrt((3*area_box)/4) + offset_y; // just implement your own crop function!!!
 

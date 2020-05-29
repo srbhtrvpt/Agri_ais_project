@@ -4,12 +4,11 @@
 
   <node name="pcl_integrator_node" pkg="myproject1" type="pcl_integrator_node" output="screen" required="true">
     <param name="max_buffer_size" value="20" />
-    <param name="size_x" value="8" />
-    <param name="size_y" value="6" />
-    <param name="offset_x" value="1" />
+    <param name="decay_size" value="60" />
+    
+    <param name="area_box" value="48" />
+    <param name="offset_x" value="0" />
     <param name="offset_y" value="0" />
-    <param name="fixed_frame" value="odom" />
-    <param name="base_footprint" value="base_footprint" />
     <remap from="input_cloud" to="/sensor/laser/vlp16/front/pointcloud_xyzi"/>
     <remap from="output_cloud" to="/sensor/laser/vlp16/front/integrated_pointcloud_xyzi"/>
   </node>
