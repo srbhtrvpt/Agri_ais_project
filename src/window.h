@@ -1,6 +1,10 @@
 #ifndef _WINDOW_H_
 #define _WINDOW_H_
 
+#include <pcl_ros/point_cloud.h>
+
+typedef pcl::PointXYZI PointT;
+
 class Window
 {
 public:
@@ -8,9 +12,9 @@ public:
     bool is_inside(const PointT& p) const;
     
 protected:
-    float min_x_, min_y_, max_x_, max_y_;
+    float min_x, min_y, max_x, max_y;
     
 };
 
-
+#include "window.cpp"
 #endif // _WINDOW_H_

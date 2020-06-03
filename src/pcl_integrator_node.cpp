@@ -4,7 +4,7 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <pcl_ros/point_cloud.h>
+// #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/filters/crop_box.h>
@@ -15,17 +15,20 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/sync_policies/exact_time.h>
 #include <boost/bind.hpp>
+#include "window.h"
+
+
 
 //#include <pcl/io/impl/synchronized_queue.hpp>
 
 using namespace message_filters;
-typedef pcl::PointXYZI PointT;
+//typedef pcl::PointXYZI PointT;
 typedef pcl::PointCloud<PointT> PointCloud;
 
 
 ros::Time to_ros_time(pcl::uint64_t stamp);
 bool transform_pointcloud(PointCloud& cloud, std::string frame_id);
-bool is_inside(const PointT& p);
+//bool is_inside(const PointT& p);
 
 // ros parameters
 int max_buffer_size;
@@ -45,12 +48,8 @@ tf::TransformListener *listener;
 
 ros::Publisher point_cloud_pub;
 
-
-
-//const Window window(offset_x, ...);
-// window.is_inside(p);
-
-bool is_inside(const PointT& p)
+const Window window(offset_x,offset_y,size_x,size_y);
+/*bool is_inside(const PointT& p)
 {
     float min_x = offset_x;
     float max_x = offset_x + size_x;
@@ -58,26 +57,28 @@ bool is_inside(const PointT& p)
     float max_y = offset_y + 0.5*size_y;
     
     return (p.x >= min_x && p.x <= max_x) && (p.y >= min_y && p.y <= max_y);
-}
-        
+} */
 
 PointCloud::Ptr crop_pcl(PointCloud::Ptr cloud)    
 {
     if(cloud->header.frame_id.compare(base_footprint) != 0){
         //ROS_ERROR("transforming cloud for cropping");
-        transform_pointcloud(*cloud, base_footprint);
+        if(!pcl_ros::transformPointCloud(base_footprint, *cloud, *cloud, *listener)){
+            return cloud;
+        }
     }
 
     PointCloud::Ptr result(new PointCloud);
     result->header = cloud->header;
     for(size_t i = 0; i < cloud->size(); ++i){
         const PointT& p = (*cloud)[i];
-        if(is_inside(p)){
+        if(window.is_inside(p)){
             result->push_back(p);
         }
     }
     return result;
 }
+
 void callback2(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
 {
     PointCloud::Ptr cloud(new PointCloud);
@@ -125,22 +126,9 @@ int main(int argc, char *argv[])
 {
     // This must be called before anything else ROS-related
     ros::init(argc, argv, "pcl_integrator_node");
-
-    /*tf2_ros::Buffer tfBuffer;
-    tf2_ros::TransformListener tfListener(tfBuffer);
-    geometry_msgs::TransformStamped transformStamped;
-    static tf2_ros::TransformBroadcaster br2; */
     ros::NodeHandle nh;
     listener = new tf::TransformListener();
-    // br = new tf::TransformBroadcaster(); // you do not need that...
     
-    /*message_filters::Subscriber<nav_msgs::Odometry> odom_sub(nh, "/robot/odom", 1000);
-    message_filters::Subscriber<sensor_msgs::PointCloud2> cloud_sub(nh, "/sensor/laser/vlp16/front/pointcloud_xyzi", 1000);
-    typedef sync_policies::ApproximateTime<nav_msgs::Odometry, sensor_msgs::PointCloud2> MySyncPolicy;
-      //typedef sync_policies::ExactTime<nav_msgs::Odometry, sensor_msgs::PointCloud2> MySyncPolicy;
-    
-    Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), odom_sub, cloud_sub);
-    sync.registerCallback(boost::bind(&callback, _1, _2));*/
 
     ros::NodeHandle nhPriv("~");
     
@@ -181,15 +169,3 @@ int main(int argc, char *argv[])
     ros::spin();
     return 0;
 }
-
-//listener.waitForTransform('/sensor/laser/vlp16/front/pointcloud_xyzi',,'/sensor/laser/vlp16/front/pointcloud_xyzi',, , ros::Time(0), ros::Duration(10.0) );
-/*ros::Time past = ros::Time::now() - ros::Duration(5.0); 
-        transformStamped = tfBuffer.lookupTransform("/sensor/laser/vlp16/front/pointcloud_xyzi", ros::Time::now(), "/sensor/laser/vlp16/front/pointcloud_xyzi", past, "/robot/odom", ros::Duration(1.0));*/
-/*ros::Time now = ros::Time::now();
-        ros::Time past = now - ros::Duration(5.0);
-    listener.waitForTransform("/sensor/laser/vlp16/front/pointcloud_xyzi", now,
-                              "/sensor/laser/vlp16/front/pointcloud_xyzi", past,
-                              "/robot/odom", ros::Duration(1.0));
-    listener.lookupTransform("/sensor/laser/vlp16/front/pointcloud_xyzi", now,
-                             "/sensor/laser/vlp16/front/pointcloud_xyzi", past,
-                             "/robot/odom", transform); */
