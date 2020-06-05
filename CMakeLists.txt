@@ -74,7 +74,7 @@ add_executable(${PROJECT_NAME}_node src/myproject1_node.cpp)
 
 add_executable(pcl_integrator_node
   src/pcl_integrator_node.cpp
-  #window.cpp
+  src/window.cpp
   )
 
 add_executable(ransac_node src/ransac_node.cpp)

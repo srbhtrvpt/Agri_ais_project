@@ -1,17 +1,14 @@
 #include "window.h"
 
-Window::Window(float offset_x, float offset_y, float size_x, float size_y)
+Window::Window(float offset_x_, float offset_y_, float size_x_, float size_y_)
 {
-
-    float min_x = offset_x;
-    float max_x = offset_x + size_x;
-    float min_y = offset_y - 0.5*size_y;
-    float max_y = offset_y + 0.5*size_y;
+    min_x_ = offset_x_;
+    max_x_ = offset_x_ + size_x_;
+    min_y_ = offset_y_ - 0.5*size_y_;
+    max_y_ = offset_y_ + 0.5*size_y_;
 }
 
 bool Window::is_inside(const PointT& p) const
 {
-    
-    return (p.x >= min_x && p.x <= max_x) && (p.y >= min_y && p.y <= max_y);
-
+    return (p.x >= min_x_ && p.x <= max_x_) && (p.y >= min_y_ && p.y <= max_y_);
 }

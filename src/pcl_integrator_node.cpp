@@ -17,38 +17,31 @@
 #include <boost/bind.hpp>
 #include "window.h"
 
-
-
 //#include <pcl/io/impl/synchronized_queue.hpp>
 
 using namespace message_filters;
 //typedef pcl::PointXYZI PointT;
 typedef pcl::PointCloud<PointT> PointCloud;
 
-
-ros::Time to_ros_time(pcl::uint64_t stamp);
-bool transform_pointcloud(PointCloud& cloud, std::string frame_id);
+bool transform_pointcloud(PointCloud &cloud, std::string frame_id);
 //bool is_inside(const PointT& p);
 
 // ros parameters
 int max_buffer_size;
-//float area_box, offset_x, offset_y, x_box, y_box;
 float size_x, size_y, offset_x, offset_y;
-bool crop_flag = true;
-std::string fixed_frame = "odom";
-std::string base_footprint = "base_footprint";
-std::string target_frame = base_footprint;
+bool crop_flag;
+std::string fixed_frame, base_footprint, target_frame;
 
 //std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT> > sourceClouds;
-std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT> > cloud_buffer;
-
-ros::Time current_stamp;
+std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT>> cloud_buffer;
 tf::TransformListener *listener;
 //tf::TransformBroadcaster *br;
 
 ros::Publisher point_cloud_pub;
+Window w(offset_x, offset_y, size_x, size_y);
 
-const Window window(offset_x,offset_y,size_x,size_y);
+
+
 /*bool is_inside(const PointT& p)
 {
     float min_x = offset_x;
@@ -59,61 +52,73 @@ const Window window(offset_x,offset_y,size_x,size_y);
     return (p.x >= min_x && p.x <= max_x) && (p.y >= min_y && p.y <= max_y);
 } */
 
-PointCloud::Ptr crop_pcl(PointCloud::Ptr cloud)    
+PointCloud::Ptr crop_pcl(PointCloud::Ptr cloud)
 {
-    if(cloud->header.frame_id.compare(base_footprint) != 0){
+    if (cloud->header.frame_id.compare(base_footprint) != 0)
+    {
         //ROS_ERROR("transforming cloud for cropping");
-        if(!pcl_ros::transformPointCloud(base_footprint, *cloud, *cloud, *listener)){
+        if (!pcl_ros::transformPointCloud(base_footprint, *cloud, *cloud, *listener))
+        {
             return cloud;
         }
     }
 
     PointCloud::Ptr result(new PointCloud);
     result->header = cloud->header;
-    for(size_t i = 0; i < cloud->size(); ++i){
-        const PointT& p = (*cloud)[i];
-        if(window.is_inside(p)){
+    for (size_t i = 0; i < cloud->size(); ++i)
+    {
+        const PointT &p = (*cloud)[i];
+        if(w.is_inside(p))
+        {
             result->push_back(p);
         }
     }
     return result;
 }
 
-void callback2(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
+void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
 {
     PointCloud::Ptr cloud(new PointCloud);
     pcl::fromROSMsg(*cloud_ros, *cloud);
 
-    if(!cloud_buffer.empty() && cloud_buffer.back()->header.stamp == cloud->header.stamp){
+    if (!cloud_buffer.empty() && cloud_buffer.back()->header.stamp == cloud->header.stamp)
+    {
         // ignore same point cloud (timestamp wise)
         return;
     }
-    
-    if(!pcl_ros::transformPointCloud(fixed_frame, *cloud, *cloud, *listener)){
+
+    if (!pcl_ros::transformPointCloud(fixed_frame, *cloud, *cloud, *listener))
+    {
         ROS_ERROR("%s: cannot transform incoming pcl to fixed frame %s.", __func__, fixed_frame.c_str());
         return;
     }
     cloud_buffer.push_back(cloud);
 
     int buffer_size = std::max(max_buffer_size, 1);
-    
-    while(cloud_buffer.size() > buffer_size){
+
+    while (cloud_buffer.size() > buffer_size)
+    {
         cloud_buffer.pop_front();
     }
-    if(cloud_buffer.empty()){
+    if (cloud_buffer.empty())
+    {
         return;
     }
-    
+
     PointCloud::Ptr integrated_cloud(new PointCloud);
-    for(size_t i = 0; i < cloud_buffer.size(); ++i){
+    for (size_t i = 0; i < cloud_buffer.size(); ++i)
+    {
         *integrated_cloud += *(cloud_buffer[i]);
     }
     integrated_cloud->header = cloud_buffer.back()->header;
-    if(crop_flag){
+    if (crop_flag)
+    {
         integrated_cloud = crop_pcl(integrated_cloud);
     }
-    if(integrated_cloud->header.frame_id.compare(target_frame) != 0){
-        if(!pcl_ros::transformPointCloud(target_frame, *integrated_cloud, *integrated_cloud, *listener)){
+    if (integrated_cloud->header.frame_id.compare(target_frame) != 0)
+    {
+        if (!pcl_ros::transformPointCloud(target_frame, *integrated_cloud, *integrated_cloud, *listener))
+        {
             ROS_ERROR("transforming integrated cloud into target_frame %s", target_frame.c_str());
             return;
         }
@@ -121,51 +126,33 @@ void callback2(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     point_cloud_pub.publish(integrated_cloud);
 }
 
-
 int main(int argc, char *argv[])
 {
     // This must be called before anything else ROS-related
     ros::init(argc, argv, "pcl_integrator_node");
     ros::NodeHandle nh;
     listener = new tf::TransformListener();
-    
 
     ros::NodeHandle nhPriv("~");
-    
 
-    if(!nhPriv.getParam("max_buffer_size", max_buffer_size)){
+    if (!nhPriv.getParam("max_buffer_size", max_buffer_size))
+    {
         ROS_ERROR("max_buffer_size was not set!");
         return 1;
     }
-    if(!nhPriv.getParam("size_x", size_x)){
-        size_x = 8.f;
-    }
-    if(!nhPriv.getParam("size_y", size_y)){
-        size_y = 6.f;
-    }
-    if(!nhPriv.getParam("offset_x", offset_x)){
-        offset_x = 1.f;
-    }
-    if(!nhPriv.getParam("offset_y", offset_y)){
-        offset_y = 0.f;
-    }
-    if(!nhPriv.getParam("fixed_frame", fixed_frame)){
-        ROS_ERROR("fixed_frame was not set, setting to default");
-        fixed_frame = "odom";
-    }
-    if(!nhPriv.getParam("base_footprint", base_footprint)){
-        ROS_ERROR("base_footprint was not set, setting to default");
-        base_footprint = "base_footprint";
-    }
-
-    //x_box = sqrt((4*area_box)/3) + offset_x; // why so complicated?
-    //y_box = sqrt((3*area_box)/4) + offset_y; // just implement your own crop function!!!
-
-
-    // Create a ROS node handle
-    //ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback); // 100 in buffer is a bit much?
-    ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback2); // 100 in buffer is a bit much?
-    point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("output_cloud", 1, true); // you can use remap in the launch file to set the correct runtime topics!
+    
+    nhPriv.param("offset_y", offset_y, 0.f);
+    nhPriv.param("offset_x", offset_x, 1.f);
+    nhPriv.param("size_y", size_y, 6.f);
+    nhPriv.param("size_x", size_x, 8.f);
+    nhPriv.param("crop_flag", crop_flag, true);
+    nhPriv.param<std::string>("fixed_frame", fixed_frame, "odom");
+    nhPriv.param<std::string>("base_footprint", base_footprint, "base_footprint");
+    target_frame = base_footprint;
+    w = Window(offset_x, offset_y, size_x, size_y);
+   
+    ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback); // 100 in buffer is a bit much?
+    point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("output_cloud", 1, true);          // you can use remap in the launch file to set the correct runtime topics!
     ros::spin();
     return 0;
 }
