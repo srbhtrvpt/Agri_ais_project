@@ -45,7 +45,7 @@ pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
 int neighborhood_radius, ksearch_radius; // neigh_radius
 double NormalDistanceWeight , DistanceThreshold, curvature_threshold;
 std::vector<uint8_t> point_data;
-int normal_scale;
+int normal_visualisation_scale;
 
 
 std_msgs::Header header_cloud_out;
@@ -235,9 +235,9 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
             p.z = cloud_in->points[i].z;
             normal_marker.points.push_back(p);
             normal_marker.colors.push_back(color);
-            p.z += cloud_normals->points[i].normal_z * normal_scale * 0.001;
-            p.y += cloud_normals->points[i].normal_y * normal_scale * 0.001;
-            p.x += cloud_normals->points[i].normal_x * normal_scale * 0.001;
+            p.z += cloud_normals->points[i].normal_z * normal_visualisation_scale * 0.001;
+            p.y += cloud_normals->points[i].normal_y * normal_visualisation_scale * 0.001;
+            p.x += cloud_normals->points[i].normal_x * normal_visualisation_scale * 0.001;
             normal_marker.points.push_back(p);
             normal_marker.colors.push_back(color);
 
@@ -326,7 +326,7 @@ int main(int argc, char *argv[])
     ros::NodeHandle nhPriv("~priv");
     nhPriv.param("neighborhood_radius", neighborhood_radius, 2);
     nhPriv.param("ksearch_radius", ksearch_radius, 16);
-    nhPriv.param("normal_scale", normal_scale, 30);
+    nhPriv.param("normal_visualisation_scale", normal_visualisation_scale, 30);
     nhPriv.param("curvature_threshold", curvature_threshold, 0.00275);
     nhPriv.param("Distance_Threshold", DistanceThreshold, 0.05);
     nhPriv.param("NormalDistanceWeight", NormalDistanceWeight, 0.02);

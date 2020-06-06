@@ -5,7 +5,7 @@
     <param name="ksearch_radius" value="16" />
     <param name="Distance_Threshold" value="0.05" />
     <param name="NormalDistanceWeight" value="0.02" />
-    <param name="normal_scale" value="33" />
+    <param name="normal_visualisation_scale" value="33" />  <!--0 to 100-->
     <param name="curvature_threshold" value="0.0" />
 
     <remap from="input_cloud" to="/sensor/laser/vlp16/front/integrated_pointcloud_xyzi"/>
