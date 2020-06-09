@@ -1,0 +1,18 @@
+<launch>
+
+  <!--node name="myproject1_node" pkg="myproject1" type="myproject1_node" output="screen" /--> *
+
+  <node name="pcl_integrator_node" pkg="myproject1" type="pcl_integrator_node" output="screen" required="true">
+    <param name="max_buffer_size" value="24" />
+    <param name="size_x" value="8.0" />
+    <param name="size_y" value="6.0" />
+    <param name="offset_x" value="1.0" />
+    <param name="offset_y" value="0.0" />
+    <param name="fixed_frame" value="odom" />
+    <param name="base_footprint" value="base_footprint" />
+    <param name="crop_flag" value="true" />
+
+    <!--remap from="input_cloud" to="/sensor/laser/vlp16/front/pointcloud_xyzi"/-->
+    <remap from="output_cloud" to="/sensor/laser/vlp16/front/integrated_pointcloud_xyzi"/>
+  </node>
+</launch>

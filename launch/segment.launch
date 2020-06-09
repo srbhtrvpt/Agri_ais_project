@@ -1,6 +1,0 @@
-<launch>
-
-
-<node name="ransac_node" pkg="myproject1" type="ransac_node" output="screen" >
-</node>
-</launch>
