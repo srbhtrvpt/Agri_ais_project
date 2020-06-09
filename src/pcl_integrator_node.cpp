@@ -15,7 +15,13 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/sync_policies/exact_time.h>
 #include <boost/bind.hpp>
+#include <rosbag/bag.h>
+#include <rosbag/view.h>
+#include <boost/foreach.hpp>
 #include "window.h"
+#define foreach BOOST_FOREACH
+
+
 
 //#include <pcl/io/impl/synchronized_queue.hpp>
 
@@ -150,8 +156,25 @@ int main(int argc, char *argv[])
     nhPriv.param<std::string>("base_footprint", base_footprint, "base_footprint");
     target_frame = base_footprint;
     w = Window(offset_x, offset_y, size_x, size_y);
-   
-    ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback); // 100 in buffer is a bit much?
+    
+    rosbag::Bag input_bag, output_bag;
+    std::vector<std::string> topics;
+    input_bag.open("home/srbh/agrirobo_proj/with_pcls/largeplants.bag", rosbag::bagmode::Read);
+    //output_bag.open("home/srbh/agrirobo_proj/with_pcls/test.bag", rosbag::bagmode::Write);
+    topics.push_back(std::string("/sensor/laser/vlp16/front/pointcloud_xyzi"));
+    rosbag::View view(input_bag, rosbag::TopicQuery(topics));
+    foreach(rosbag::MessageInstance const msg, view)
+    {
+        sensor_msgs::PointCloud2ConstPtr pt_cloud = msg.instantiate<sensor_msgs::PointCloud2>();
+        if (pt_cloud != NULL)
+        {
+            callback(pt_cloud);
+        }
+    }
+
+
+
+    //ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback); // 100 in buffer is a bit much?
     point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("output_cloud", 1, true);          // you can use remap in the launch file to set the correct runtime topics!
     ros::spin();
     return 0;
