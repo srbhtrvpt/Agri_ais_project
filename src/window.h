@@ -1,20 +1,17 @@
 #ifndef _WINDOW_H_
 #define _WINDOW_H_
 
-#include <pcl_ros/point_cloud.h>
 
-typedef pcl::PointXYZI PointT;
-
+template <class PointT>
 class Window
 {
 public:
-    Window();
-    Window(float offset_x_, float offset_y_, float size_x_, float size_y_);
+    Window(float size_x = 1.f, float size_y = 1.f, float offset_x= 0.f, float offset_y = 0.f);
     bool is_inside(const PointT& p) const;
     
 protected:
     float min_x_, min_y_, max_x_, max_y_;
     
 };
-
+#include "window.hpp"
 #endif // _WINDOW_H_

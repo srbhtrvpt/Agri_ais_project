@@ -18,6 +18,7 @@
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
 #include <boost/foreach.hpp>
+#include <pcl_ros/point_cloud.h>
 #include "window.h"
 #define foreach BOOST_FOREACH
 
@@ -26,15 +27,14 @@
 //#include <pcl/io/impl/synchronized_queue.hpp>
 
 using namespace message_filters;
-//typedef pcl::PointXYZI PointT;
+typedef pcl::PointXYZI PointT;
 typedef pcl::PointCloud<PointT> PointCloud;
 
-bool transform_pointcloud(PointCloud &cloud, std::string frame_id);
+//bool transform_pointcloud(PointCloud &cloud, std::string frame_id);
 //bool is_inside(const PointT& p);
 
 // ros parameters
 int max_buffer_size;
-float size_x, size_y, offset_x, offset_y;
 bool crop_flag;
 std::string fixed_frame, base_footprint, target_frame;
 
@@ -44,7 +44,7 @@ tf::TransformListener *listener;
 //tf::TransformBroadcaster *br;
 
 ros::Publisher point_cloud_pub;
-Window w(offset_x, offset_y, size_x, size_y);
+Window<PointT> w;
 
 
 
@@ -138,6 +138,7 @@ int main(int argc, char *argv[])
     ros::init(argc, argv, "pcl_integrator_node");
     ros::NodeHandle nh;
     listener = new tf::TransformListener();
+    float size_x, size_y, offset_x, offset_y;
 
     ros::NodeHandle nhPriv("~");
 
@@ -155,27 +156,38 @@ int main(int argc, char *argv[])
     nhPriv.param<std::string>("fixed_frame", fixed_frame, "odom");
     nhPriv.param<std::string>("base_footprint", base_footprint, "base_footprint");
     target_frame = base_footprint;
-    w = Window(offset_x, offset_y, size_x, size_y);
-    
-    rosbag::Bag input_bag, output_bag;
-    std::vector<std::string> topics;
-    input_bag.open("home/srbh/agrirobo_proj/with_pcls/largeplants.bag", rosbag::bagmode::Read);
-    //output_bag.open("home/srbh/agrirobo_proj/with_pcls/test.bag", rosbag::bagmode::Write);
-    topics.push_back(std::string("/sensor/laser/vlp16/front/pointcloud_xyzi"));
-    rosbag::View view(input_bag, rosbag::TopicQuery(topics));
-    foreach(rosbag::MessageInstance const msg, view)
-    {
-        sensor_msgs::PointCloud2ConstPtr pt_cloud = msg.instantiate<sensor_msgs::PointCloud2>();
-        if (pt_cloud != NULL)
-        {
-            callback(pt_cloud);
-        }
-    }
-
-
+    w = Window<PointT>(size_x, size_y, offset_x, offset_y);
 
     //ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback); // 100 in buffer is a bit much?
     point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("output_cloud", 1, true);          // you can use remap in the launch file to set the correct runtime topics!
-    ros::spin();
+    //ros::spin();
+
+    
+    rosbag::Bag input_bag, output_bag;
+    std::vector<std::string> topics;
+    input_bag.open("/home/srbh/agrirobo_proj/with_pcls/largeplants.bag", rosbag::bagmode::Read);
+    //output_bag.open("/home/srbh/agrirobo_proj/with_pcls/test.bag", rosbag::bagmode::Write);
+    topics.push_back("/sensor/laser/vlp16/front/pointcloud_xyzi");
+    topics.push_back("/tf");
+
+
+    //give a tf buffer to listener. ( fill with the tf messages) 
+    //read all transforms one iteration before (prior for loop to add to tf buffer(size is duration of bag + some secs))
+    rosbag::View view(input_bag, rosbag::TopicQuery(topics));
+    listener = *listener (ros::Duration(70));
+
+    foreach(rosbag::MessageInstance const msg, view)
+    {
+        sensor_msgs::PointCloud2ConstPtr pt_cloud = msg.instantiate<sensor_msgs::PointCloud2>();
+        if (pt_cloud == NULL)
+        {   
+            continue;
+        }
+        std::cout << pt_cloud->header.stamp << std::endl;
+        //callback(pt_cloud);
+        ros::spinOnce();
+    }
+    std::cout << "done" << std::endl;
+
     return 0;
 }

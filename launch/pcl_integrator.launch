@@ -12,7 +12,7 @@
     <param name="base_footprint" value="base_footprint" />
     <param name="crop_flag" value="true" />
 
-    <!--remap from="input_cloud" to="/sensor/laser/vlp16/front/pointcloud_xyzi"/-->
+    <remap from="input_cloud" to="/sensor/laser/vlp16/front/pointcloud_xyzi"/>
     <remap from="output_cloud" to="/sensor/laser/vlp16/front/integrated_pointcloud_xyzi"/>
   </node>
 </launch>

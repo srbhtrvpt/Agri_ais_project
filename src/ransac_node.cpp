@@ -93,8 +93,8 @@ visualization_msgs::Marker init_plane_marker()
     plane_marker.scale.y = 2;
     plane_marker.scale.z = 0.001;
     plane_marker.color.a = 1.0; 
-    plane_marker.color.r = 0.0;
-    plane_marker.color.g = 1.0;
+    plane_marker.color.r = 1.0;
+    plane_marker.color.g = 0.33;
     plane_marker.color.b = 0.0;
     return plane_marker;
 }
@@ -118,7 +118,7 @@ void set_pcl_fields()
     pt_field.datatype = pt_field.FLOAT32;
     pt_field.count = 1;
     fields.push_back(pt_field);
-    pt_field.name = 'c';
+    pt_field.name = "curvature";
     pt_field.offset = 12;
     pt_field.datatype = pt_field.FLOAT32;
     pt_field.count = 1;
@@ -331,6 +331,7 @@ int main(int argc, char *argv[])
     nhPriv.param("Distance_Threshold", DistanceThreshold, 0.05);
     nhPriv.param("NormalDistanceWeight", NormalDistanceWeight, 0.02);
     set_pcl_fields();
+    
     // ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/sensor/laser/vlp16/front/pointcloud_xyzi", 1, callback);
     ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback);
     vis_marker_pub = nh.advertise<visualization_msgs::Marker>("normal_marker", 1, true);
