@@ -11,7 +11,7 @@
     <param name="fixed_frame" value="odom" />
     <param name="base_footprint" value="base_footprint" />
     <param name="crop_flag" value="true" />
-    <param name="bag_flag" value="false" />
+    <param name="bag_flag" value="true" />
 
 
     <remap from="input_cloud" to="/sensor/laser/vlp16/front/pointcloud_xyzi"/>

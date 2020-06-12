@@ -38,7 +38,7 @@ std::string fixed_frame, base_footprint, target_frame;
 
 //std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT> > sourceClouds;
 std::deque<PointCloud::Ptr, Eigen::aligned_allocator<PointT>> cloud_buffer;
-tf::TransformListener *listener;
+tf::TransformListener *listener(new tf::TransformListener(ros::Duration(70.0)));
 //tf::TransformBroadcaster *br;
 
 ros::Publisher point_cloud_pub;
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
 
     if (bag_flag)
     {
-
+        point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("output_cloud", 1, true);  
         rosbag::Bag input_bag, output_bag;
         std::vector<std::string> topics;
         input_bag.open("/home/srbh/agrirobo_proj/with_pcls/largeplants.bag", rosbag::bagmode::Read);
@@ -169,8 +169,6 @@ int main(int argc, char *argv[])
         //give a tf buffer to listener. ( fill with the tf messages)
         //read all transforms one iteration before (prior for loop to add to tf buffer(size is duration of bag + some secs))
         rosbag::View view(input_bag, rosbag::TopicQuery(topics));
-        //listener = *listener(ros::Duration(70));
-
         foreach (rosbag::MessageInstance const msg, view)
         {
             sensor_msgs::PointCloud2ConstPtr pt_cloud = msg.instantiate<sensor_msgs::PointCloud2>();
@@ -178,8 +176,8 @@ int main(int argc, char *argv[])
             {
                 continue;
             }
-            std::cout << pt_cloud->header.stamp << std::endl;
-            //callback(pt_cloud);
+            //std::cout << pt_cloud->header.stamp << std::endl;
+            callback(pt_cloud);
             ros::spinOnce();
         }
         std::cout << "done" << std::endl;
