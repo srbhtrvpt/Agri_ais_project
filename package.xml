@@ -72,7 +72,7 @@
   <depend>nav_msgs</depend>
   <depend>visualization_msgs</depend>
   
-  <depend>Boost</depend>
+  <depend>boost</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
