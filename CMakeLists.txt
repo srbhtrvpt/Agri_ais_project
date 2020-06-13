@@ -61,9 +61,14 @@ include_directories(
 )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/myproject1.cpp
-# )
+add_library(pcl_integrator_lib
+   src/window.cpp
+   src/pcl_integrator.cpp
+)
+
+target_link_libraries(pcl_integrator_lib
+  ${catkin_LIBRARIES}
+  )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -73,20 +78,26 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
+
 add_executable(${PROJECT_NAME}_node src/myproject1_node.cpp)
+target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})# ${OpenCV_LIBS})
 
 add_executable(pcl_integrator_node
   src/pcl_integrator_node.cpp
-  src/window.cpp
-  src/pcl_integrator.cpp
+  )
+target_link_libraries(pcl_integrator_node
+  ${catkin_LIBRARIES}
+  pcl_integrator_lib
+  )
+
+add_executable(pcl_integrator_node_offline
+  src/pcl_integrator_node_offline.cpp
+  )
+target_link_libraries(pcl_integrator_node_offline
+  ${catkin_LIBRARIES}
+  pcl_integrator_lib
   )
 
 add_executable(ransac_node src/ransac_node.cpp)
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})# ${OpenCV_LIBS})
-
-target_link_libraries(pcl_integrator_node  ${catkin_LIBRARIES})
-
 target_link_libraries(ransac_node  ${catkin_LIBRARIES})# ${PCL_LIBRARIES})
 

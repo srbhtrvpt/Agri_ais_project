@@ -12,8 +12,10 @@ PclIntegrator::PclIntegrator(std::string fixed_frame, tf2::BufferCore* tf_buffer
 {
 }
 
-bool PclIntegrator::integrate(const sensor_msgs::PointCloud2::Ptr& pcl_msg)
+bool PclIntegrator::integrate(const sensor_msgs::PointCloud2::ConstPtr& pcl_msg_orig)
 {
+    sensor_msgs::PointCloud2::Ptr pcl_msg(new sensor_msgs::PointCloud2);
+    *pcl_msg = *pcl_msg_orig;
     geometry_msgs::TransformStamped transformStamped;
     if (!cloud_buffer_.empty() && cloud_buffer_.back()->header.stamp == pcl_msg->header.stamp)
     {
@@ -79,20 +81,54 @@ sensor_msgs::PointCloud2::Ptr PclIntegrator::integratedCloud(std::string target_
     return integrated_cloud;
 }
 
+bool hasField(const sensor_msgs::PointCloud2::Ptr& cloud, std::string fieldname)
+{
+    const std::vector<sensor_msgs::PointField>& fields = cloud->fields;
+    for(size_t i = 0; i < fields.size(); ++i){
+        if(fields[i].name.compare(fieldname) == 0){
+            return true;
+        }
+    }
+    ROS_ERROR("%s: cloud has no field %s!", __func__, fieldname.c_str());
+    return false;
+}
+
 sensor_msgs::PointCloud2::Ptr PclIntegrator::crop_pcl(const sensor_msgs::PointCloud2::Ptr& cloud) const
 {
+    // check that cloud contains x and y fields
+    if(!hasField(cloud, "x") || !hasField(cloud, "y")){
+        return cloud;
+    }
+    
     sensor_msgs::PointCloud2::Ptr cropped_pcl(new sensor_msgs::PointCloud2());
-    //for (sensor_msgs::PointCloud2ConstIterator<float> it(*cloud, "x"); it != it.end(); ++it)
-    //{
-    //    // this seems strange...
-    //    PointT p;
-    //    p.x = it[0];
-    //    p.y = it[1];
-    //    p.z = it[2];
-    //    if (w.is_inside(p))
-    //    {
-    //        result->push_back(p);
-    //    }
-    //}
+    cropped_pcl->header = cloud->header;
+    cropped_pcl->fields = cloud->fields;
+    cropped_pcl->is_bigendian = cloud->is_bigendian;
+    int point_step = cropped_pcl->point_step = cloud->point_step;
+    cropped_pcl->row_step = cloud->row_step;
+    cropped_pcl->is_dense = cloud->is_dense;
+    cropped_pcl->height = 1;
+
+    const std::vector<uint8_t>& cloud_data = cloud->data;
+    std::vector<uint8_t>& cropped_data = cropped_pcl->data;
+    
+    int index = 0;
+    sensor_msgs::PointCloud2ConstIterator<float> it_x(*cloud, "x");
+    sensor_msgs::PointCloud2ConstIterator<float> it_y(*cloud, "y");
+    
+    for (; it_x != it_x.end(); ++it_x)
+    {
+        if (window_.is_inside(*it_x, *it_y))
+        {
+            // you need to make sure, that you push all point data into the new point cloud!!!
+            int data_start = index*point_step;
+            int data_end = (index+1)*point_step-1;
+            cropped_data.insert(cropped_data.end(), cloud_data.begin()+data_start, cloud_data.begin()+data_end);
+        }
+        ++it_y;
+        index++;
+    }
+    cropped_pcl->width = index;
+
     return cropped_pcl;
 }

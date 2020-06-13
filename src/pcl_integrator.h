@@ -13,7 +13,7 @@ public:
 
     PclIntegrator(std::string fixed_frame, tf2::BufferCore* tf_buffer, int max_buffer_size=10, const Window& window=Window());
 
-    bool integrate(const sensor_msgs::PointCloud2::Ptr& pcl_msg);
+    bool integrate(const sensor_msgs::PointCloud2::ConstPtr& pcl_msg);
     sensor_msgs::PointCloud2::Ptr integratedCloud(std::string target_frame="", bool crop=true) const;
     
 protected:
