@@ -17,6 +17,7 @@
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <visualization_msgs/Marker.h>
 #include <iostream>
+#include <tf2/LinearMath/Quaternion.h>
 #include <std_msgs/Header.h>
 
 ros::Publisher point_cloud_pub, point_cloud_pub1, point_cloud_pub2, vis_marker_pub, vis_marker_pub1;
@@ -30,23 +31,22 @@ std::vector<uint8_t> floattoeight(float argn);
 std::vector<int> neighborhood_sq(int cc, int rr);
 void publishable_point(float pt);
 visualization_msgs::Marker init_normal_marker();
-visualization_msgs::Marker init_plane_marker();
+visualization_msgs::Marker init_plane_marker(tf2::Quaternion marker_quat, pcl::ModelCoefficients::Ptr coeffs);
 void set_pcl_fields();
 bool point_valid(int cc, int rr);
 std::vector<int> neighborhood_plus(int cc, int rr);
+tf2::Quaternion set_orientation(pcl::ModelCoefficients::Ptr coeffs);
 
 PointCloud::Ptr cloud_in(new PointCloud), cloud_inliers(new PointCloud), cloud_outliers(new PointCloud);
 PointCloudN::Ptr cloud_normals(new PointCloudN);
 PointCloud::iterator it;
 sensor_msgs::PointCloud2::Ptr output_ground(new sensor_msgs::PointCloud2), output_plants(new sensor_msgs::PointCloud2), cloud_out(new sensor_msgs::PointCloud2);
-
 pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
 pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
-int neighborhood_radius, ksearch_radius; // neigh_radius
-double NormalDistanceWeight , DistanceThreshold, curvature_threshold;
+int neighborhood_radius, ksearch_radius, normal_visualisation_scale;
+double NormalDistanceWeight, DistanceThreshold;
+float curvature_threshold;
 std::vector<uint8_t> point_data;
-int normal_visualisation_scale;
-
 
 std_msgs::Header header_cloud_out;
 std::vector<sensor_msgs::PointField> fields;
@@ -54,8 +54,24 @@ sensor_msgs::PointField pt_field;
 std_msgs::ColorRGBA color;
 geometry_msgs::Point p;
 
+tf2::Quaternion set_orientation(pcl::ModelCoefficients::Ptr coeffs)
+{
+    tf2::Quaternion quat;
+    tf2::Vector3 n_vec;
+    n_vec.setX(coeffs->values[0]);
+    n_vec.setY(coeffs->values[1]);
+    n_vec.setZ(coeffs->values[2]);
+    n_vec = n_vec.normalized();
+    tf2Scalar pitch = tf2Asin(-n_vec.getY());
+    tf2Scalar yaw = tf2Atan2(n_vec.getX(), n_vec.getZ());
+    tf2Scalar roll = 0;
+    quat.setEuler(yaw, pitch, roll);
+    quat = quat.normalized();
+    return quat;
+}
+
 void publishable_point(float pt)
-{   
+{
     std::vector<uint8_t> point_binary;
     point_binary = floattoeight(pt);
     for (int j = 0; j < 4; j++)
@@ -78,7 +94,7 @@ visualization_msgs::Marker init_normal_marker()
     return normal_marker;
 }
 
-visualization_msgs::Marker init_plane_marker()
+visualization_msgs::Marker init_plane_marker(tf2::Quaternion marker_quat, pcl::ModelCoefficients::Ptr coeffs)
 {
     visualization_msgs::Marker plane_marker;
     plane_marker.header.frame_id = "base_footprint";
@@ -86,19 +102,22 @@ visualization_msgs::Marker init_plane_marker()
     plane_marker.id = 0;
     plane_marker.type = visualization_msgs::Marker::CYLINDER;
     plane_marker.action = visualization_msgs::Marker::ADD;
-    plane_marker.pose.position.x = 3;
-    plane_marker.pose.position.y = 0;
-    plane_marker.pose.position.z = 0;
-    plane_marker.scale.x = 2;
-    plane_marker.scale.y = 2;
-    plane_marker.scale.z = 0.001;
-    plane_marker.color.a = 1.0; 
+    plane_marker.scale.x = 6;
+    plane_marker.scale.y = 6;
+    plane_marker.scale.z = DistanceThreshold;
+    plane_marker.color.a = 1.0;
     plane_marker.color.r = 0.0;
-    plane_marker.color.g = 1.0;
+    plane_marker.color.g = 0.66;
     plane_marker.color.b = 0.0;
+    plane_marker.pose.orientation.x = marker_quat.getX();
+    plane_marker.pose.orientation.y = marker_quat.getY();
+    plane_marker.pose.orientation.z = marker_quat.getZ();
+    plane_marker.pose.orientation.w = marker_quat.getW();
+    plane_marker.pose.position.x = 5;
+    plane_marker.pose.position.y = 0;
+    plane_marker.pose.position.z = -1.0 * (1.0 * coeffs->values[3] + plane_marker.pose.position.x * coeffs->values[0] + plane_marker.pose.position.y * coeffs->values[1]) / coeffs->values[2];
     return plane_marker;
 }
-
 
 void set_pcl_fields()
 {
@@ -118,7 +137,7 @@ void set_pcl_fields()
     pt_field.datatype = pt_field.FLOAT32;
     pt_field.count = 1;
     fields.push_back(pt_field);
-    pt_field.name = 'c';
+    pt_field.name = "curvature";
     pt_field.offset = 12;
     pt_field.datatype = pt_field.FLOAT32;
     pt_field.count = 1;
@@ -200,7 +219,8 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     cloud_in->is_dense = false;
     pcl::removeNaNFromPointCloud(*cloud_in, *cloud_in, map);
     int counter = 0;
-    visualization_msgs::Marker normal_marker = init_normal_marker() , plane_marker = init_plane_marker();
+    float curv_avg = 0.f;
+    visualization_msgs::Marker normal_marker = init_normal_marker(), plane_marker;
 
     //normal estimation
     pcl::NormalEstimation<PointT, PointNT> ne;
@@ -218,6 +238,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
             isfinite(cloud_normals->points[i].normal_x) && isfinite(cloud_normals->points[i].curvature))
         {
             counter++;
+            curv_avg += cloud_normals->points[i].curvature;
             if (cloud_normals->points[i].curvature < curvature_threshold)
             {
                 color.r = 1.0;
@@ -248,7 +269,8 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
         }
     }
     //std::cout << "count" <<  counter << "size" << cloud_normals->points.size() <<  "points" << points.size() <<  "\n";
-
+    curv_avg = float(curv_avg / counter);
+    //std::cout << "avg " << curv_avg  << std::endl;
     //setup cloud curvature
     header_cloud_out.frame_id = cloud_in->header.frame_id;
     header_cloud_out.stamp = cloud_ros->header.stamp;
@@ -282,17 +304,13 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     seg.setOptimizeCoefficients(true);
     seg.setModelType(pcl::SACMODEL_PLANE);
     seg.setDistanceThreshold(DistanceThreshold); */
-    
+
     seg.setInputCloud(cloud_in);
     seg.setInputNormals(cloud_normals);
-
     seg.setMethodType(pcl::SAC_RANSAC);
     seg.segment(*inliers, *coefficients);
 
-    plane_marker.pose.orientation.x = coefficients->values[0]/coefficients->values[3];
-    plane_marker.pose.orientation.y = coefficients->values[1]/coefficients->values[3];
-    plane_marker.pose.orientation.z = coefficients->values[2]/coefficients->values[3];
-    plane_marker.pose.orientation.w = 1.0;
+    plane_marker = init_plane_marker(set_orientation(coefficients), coefficients);
     plane_marker.header.stamp = cloud_ros->header.stamp;
     vis_marker_pub1.publish(plane_marker);
 
@@ -301,9 +319,9 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     {
         PCL_ERROR("Could not estimate a planar model.\n");
     }
-//extract
+    //extract
     else
-    {   
+    {
         pcl::ExtractIndices<PointT> extract;
         extract.setInputCloud(cloud_in);
         extract.setIndices(inliers);
@@ -327,10 +345,11 @@ int main(int argc, char *argv[])
     nhPriv.param("neighborhood_radius", neighborhood_radius, 2);
     nhPriv.param("ksearch_radius", ksearch_radius, 16);
     nhPriv.param("normal_visualisation_scale", normal_visualisation_scale, 30);
-    nhPriv.param("curvature_threshold", curvature_threshold, 0.00275);
+    nhPriv.param("curvature_threshold", curvature_threshold, 0.08f);
     nhPriv.param("Distance_Threshold", DistanceThreshold, 0.05);
     nhPriv.param("NormalDistanceWeight", NormalDistanceWeight, 0.02);
     set_pcl_fields();
+
     // ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/sensor/laser/vlp16/front/pointcloud_xyzi", 1, callback);
     ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback);
     vis_marker_pub = nh.advertise<visualization_msgs::Marker>("normal_marker", 1, true);

@@ -10,11 +10,14 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   tf
+  tf2
   tf2_ros
   pcl_ros
   pcl_conversions
   cv_bridge
   image_geometry  
+  tf2_msgs
+  tf2_sensor_msgs
   std_msgs
   sensor_msgs
   geometry_msgs
@@ -41,8 +44,8 @@ find_package(Boost REQUIRED COMPONENTS system)
 catkin_package(
 # INCLUDE_DIRS include
 # LIBRARIES myproject1
-CATKIN_DEPENDS roscpp tf tf2_ros std_msgs pcl_ros sensor_msgs pcl_conversions image_geometry geometry_msgs nav_msgs visualization_msgs
-DEPENDS boost
+CATKIN_DEPENDS roscpp tf tf2 tf2_ros std_msgs pcl_ros sensor_msgs pcl_conversions image_geometry geometry_msgs nav_msgs visualization_msgs tf2_msgs tf2_sensor_msgs
+DEPENDS Boost
 )
 
 ###########
@@ -74,7 +77,6 @@ add_executable(${PROJECT_NAME}_node src/myproject1_node.cpp)
 
 add_executable(pcl_integrator_node
   src/pcl_integrator_node.cpp
-  src/window.cpp
   )
 
 add_executable(ransac_node src/ransac_node.cpp)
