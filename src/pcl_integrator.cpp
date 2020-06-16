@@ -4,7 +4,12 @@
 #include <pcl_conversions/pcl_conversions.h> // pcl::concatenate
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h> // tf2::doTransform for PointCloud2
 
-PclIntegrator::PclIntegrator(std::string fixed_frame, tf2::BufferCore* tf_buffer, int max_buffer_size, const Window& window) :
+PclIntegrator::PclIntegrator(std::string fixed_frame, tf2_ros::Buffer* tf_buffer, int max_buffer_size) :
+    PclIntegrator(fixed_frame, Window(fixed_frame), tf_buffer, max_buffer_size)
+{
+}
+
+PclIntegrator::PclIntegrator(std::string fixed_frame, const Window& window, tf2_ros::Buffer* tf_buffer, int max_buffer_size) :
     max_buffer_size_(max_buffer_size)
     , fixed_frame_(fixed_frame)
     , tf_buffer_(tf_buffer)
@@ -43,6 +48,7 @@ bool PclIntegrator::integrate(const sensor_msgs::PointCloud2::ConstPtr& pcl_msg_
     }
     if (cloud_buffer_.empty())
     {
+        ROS_ERROR("%s: cloud buffer empty!", __func__);
         return false;
     }
     return true;
@@ -60,6 +66,20 @@ sensor_msgs::PointCloud2::Ptr PclIntegrator::integratedCloud(std::string target_
 
     if (crop)
     {
+        if(integrated_cloud->header.frame_id.compare(window_.frame_id()) != 0){
+            geometry_msgs::TransformStamped transformStamped;
+            try
+            {
+                transformStamped = tf_buffer_->lookupTransform(window_.frame_id(), integrated_cloud->header.frame_id, integrated_cloud->header.stamp);
+            }
+            catch (std::runtime_error &ex)
+            {
+                ROS_ERROR("%s", ex.what());
+                ROS_ERROR("transforming integrated cloud into window frame %s", window_.frame_id().c_str());
+                return integrated_cloud;
+            }
+            tf2::doTransform(*integrated_cloud, *integrated_cloud, transformStamped);
+        }
         integrated_cloud = crop_pcl(integrated_cloud);
     }
 
@@ -105,30 +125,31 @@ sensor_msgs::PointCloud2::Ptr PclIntegrator::crop_pcl(const sensor_msgs::PointCl
     cropped_pcl->fields = cloud->fields;
     cropped_pcl->is_bigendian = cloud->is_bigendian;
     int point_step = cropped_pcl->point_step = cloud->point_step;
-    cropped_pcl->row_step = cloud->row_step;
     cropped_pcl->is_dense = cloud->is_dense;
     cropped_pcl->height = 1;
 
     const std::vector<uint8_t>& cloud_data = cloud->data;
     std::vector<uint8_t>& cropped_data = cropped_pcl->data;
     
-    int index = 0;
     sensor_msgs::PointCloud2ConstIterator<float> it_x(*cloud, "x");
     sensor_msgs::PointCloud2ConstIterator<float> it_y(*cloud, "y");
-    
+
+    int cloud_index = 0;
+    int cropped_pcl_index = 0;
     for (; it_x != it_x.end(); ++it_x)
     {
         if (window_.is_inside(*it_x, *it_y))
         {
             // you need to make sure, that you push all point data into the new point cloud!!!
-            int data_start = index*point_step;
-            int data_end = (index+1)*point_step-1;
+            int data_start = cloud_index*point_step;
+            int data_end = (cloud_index+1)*point_step;
             cropped_data.insert(cropped_data.end(), cloud_data.begin()+data_start, cloud_data.begin()+data_end);
+            cropped_pcl_index++;
         }
         ++it_y;
-        index++;
+        cloud_index++;
     }
-    cropped_pcl->width = index;
-
+    cropped_pcl->row_step = cropped_pcl_index;
+    cropped_pcl->width = cropped_pcl_index;
     return cropped_pcl;
 }

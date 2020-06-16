@@ -38,8 +38,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    Window window(size_x, size_y, offset_x, offset_y);
-    PclIntegrator pcl_integrator(fixed_frame, &tf_buffer, max_buffer_size, window);
+    Window window(base_footprint, size_x, size_y, offset_x, offset_y);
+    PclIntegrator pcl_integrator(fixed_frame, window, &tf_buffer, max_buffer_size);
     
     rosbag::View view_all(input_bag);
     

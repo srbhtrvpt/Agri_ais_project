@@ -44,9 +44,9 @@ int main(int argc, char *argv[])
     tf2_ros::Buffer tf_buffer;
     tf2_ros::TransformListener tf_listener(tf_buffer); // this will subscribe to tf and fill the tf_buffer
     
-    Window window(size_x, size_y, offset_x, offset_y);
+    Window window(base_footprint, size_x, size_y, offset_x, offset_y);
 
-    pcl_integrator = new PclIntegrator(fixed_frame, &tf_buffer, max_buffer_size, window);
+    pcl_integrator = new PclIntegrator(fixed_frame, window, &tf_buffer, max_buffer_size);
     
     ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2::Ptr>("input_cloud", 10, callback);
     pcl_publisher = nh.advertise<sensor_msgs::PointCloud2>("output_cloud", 1, true);
@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
 void callback(sensor_msgs::PointCloud2::Ptr pcl_msg)
 {
     if(!pcl_integrator->integrate(pcl_msg)){
+//        ROS_ERROR("%s: error integrating pcl at time %.9f", __func__, pcl_msg->header.stamp.toSec());
         return;
     }
     sensor_msgs::PointCloud2::Ptr integrated_pcl = pcl_integrator->integratedCloud(target_frame, crop_flag);
