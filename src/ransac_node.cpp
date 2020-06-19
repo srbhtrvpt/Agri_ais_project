@@ -16,9 +16,12 @@
 #include <sensor_msgs/PointField.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <visualization_msgs/Marker.h>
-#include <iostream>
 #include <tf2/LinearMath/Quaternion.h>
 #include <std_msgs/Header.h>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <string>
 
 ros::Publisher point_cloud_pub, point_cloud_pub1, point_cloud_pub2, vis_marker_pub, vis_marker_pub1;
 
@@ -34,6 +37,7 @@ visualization_msgs::Marker init_normal_marker();
 visualization_msgs::Marker init_plane_marker(tf2::Quaternion marker_quat, pcl::ModelCoefficients::Ptr coeffs);
 void set_pcl_fields();
 bool point_valid(int cc, int rr);
+bool write_to_file(std::string filepath, std::string data);
 std::vector<int> neighborhood_plus(int cc, int rr);
 tf2::Quaternion set_orientation(pcl::ModelCoefficients::Ptr coeffs);
 
@@ -44,8 +48,10 @@ sensor_msgs::PointCloud2::Ptr output_ground(new sensor_msgs::PointCloud2), outpu
 pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
 pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
 int neighborhood_radius, ksearch_radius, normal_visualisation_scale;
+bool save_flag;
 double NormalDistanceWeight, DistanceThreshold;
 float curvature_threshold;
+std::string filepath;
 std::vector<uint8_t> point_data;
 
 std_msgs::Header header_cloud_out;
@@ -211,8 +217,24 @@ std::vector<uint8_t> floattoeight(float argn)
     return point_bin;
 }
 
+bool write_to_file(std::string filepath, std::string data)
+{
+    std::ofstream file;
+    file.open(filepath, std::ios::out | std::ios::app);
+    if (file.fail())
+    {
+        throw std::ios_base::failure(std::strerror(errno));
+        return false;
+    }
+    file.exceptions(file.exceptions() | std::ios::failbit | std::ifstream::badbit);
+    file << data << std::endl;
+    file.close();
+    return true;
+}
+
 void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
 {
+
     point_data.clear();
     pcl::fromROSMsg(*cloud_ros, *cloud_in);
     std::vector<int> map;
@@ -231,6 +253,20 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     ne.setKSearch(ksearch_radius);
     ne.compute(*cloud_normals);
 
+    if(save_flag)
+    {
+        sensor_msgs::PointCloud2ConstIterator<float> it_in(*cloud_ros, "intensity");
+        for (; it_in != it_in.end(); ++it_in)
+        {   
+            if(!write_to_file(filepath+"intensity.txt", std::to_string(*it_in)))
+            {
+                ROS_ERROR("%s: error writing value %.9f.", __func__, *it_in);
+            }
+        }
+    }
+    
+
+
     for (int i = 0; i < cloud_normals->points.size(); i++)
     {
         if (isfinite(cloud_in->points[i].x) && isfinite(cloud_in->points[i].y) && isfinite(cloud_in->points[i].z) &&
@@ -239,6 +275,13 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
         {
             counter++;
             curv_avg += cloud_normals->points[i].curvature;
+            if(save_flag)
+            {
+                if(!write_to_file(filepath+"curvature.txt", std::to_string(cloud_normals->points[i].curvature)))
+                {
+                    ROS_ERROR("%s: error writing value %.9f.", __func__, cloud_normals->points[i].curvature);
+                }
+            
             if (cloud_normals->points[i].curvature < curvature_threshold)
             {
                 color.r = 1.0;
@@ -348,6 +391,8 @@ int main(int argc, char *argv[])
     nhPriv.param("curvature_threshold", curvature_threshold, 0.08f);
     nhPriv.param("Distance_Threshold", DistanceThreshold, 0.05);
     nhPriv.param("NormalDistanceWeight", NormalDistanceWeight, 0.02);
+    nhPriv.param("Save_data_to_text", save_flag, false);
+    nhPriv.param<std::string>("output_filepath", filepath, "/home/srbh/agrirobo_proj/with_pcls/");
     set_pcl_fields();
 
     // ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/sensor/laser/vlp16/front/pointcloud_xyzi", 1, callback);

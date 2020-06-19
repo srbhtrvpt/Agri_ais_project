@@ -1,11 +1,10 @@
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
-
 #include <tf2_msgs/TFMessage.h>
 
 #include "pcl_integrator.h"
 
-bool fillTfBufferFromBag(rosbag::View& view, tf2_ros::Buffer* tfBuffer);
+bool fillTfBufferFromBag(rosbag::View& view, ros::Duration bagDuration ,tf2_ros::Buffer* tfBuffer);
 
 int main(int argc, char *argv[])
 {
@@ -30,11 +29,20 @@ int main(int argc, char *argv[])
     input_bag.open(input_bag_path, rosbag::bagmode::Read);
     output_bag.open(input_bag_path+"_integrated.bag", rosbag::bagmode::Write);
 
-    tf2_ros::Buffer tf_buffer;
+    
+    
     std::vector<std::string> topics;
     topics.push_back("/tf");
     rosbag::View view(input_bag, rosbag::TopicQuery(topics));
-    if(!fillTfBufferFromBag(view, &tf_buffer)){
+    ros::Time start, end;
+    start = view.getBeginTime();
+    end = view.getEndTime();
+
+    ros::Duration bagDuration = end - start;
+    bagDuration *= 1.5;
+    tf2_ros::Buffer tf_buffer(bagDuration);
+    
+    if(!fillTfBufferFromBag(view,bagDuration, &tf_buffer)){
         return 1;
     }
 
@@ -71,22 +79,13 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-bool fillTfBufferFromBag(rosbag::View& view, tf2_ros::Buffer* tfBuffer)
+bool fillTfBufferFromBag(rosbag::View& view, ros::Duration bagDuration ,tf2_ros::Buffer* tfBuffer)
 {
-    ros::Time start, end;
-    start = view.getBeginTime();
-    end = view.getEndTime();
-
-    ros::Duration bagDuration = end - start;
-    bagDuration *= 1.5;
-
     if(bagDuration.toSec() < 1e-3){
         ROS_ERROR("input bag is empty!!!");
         return false;
     }
-
-    // TODO: set buffer size??
-    
+       
     tfBuffer->setUsingDedicatedThread(true);
 
     // fill tf buffer
