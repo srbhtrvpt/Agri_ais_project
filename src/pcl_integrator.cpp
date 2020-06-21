@@ -18,7 +18,7 @@ PclIntegrator::PclIntegrator(std::string fixed_frame, const Window& window, tf2_
 }
 
 /*
-sensor_msgs::PointCloud2::Ptr PclIntegrator::transformPCL(sensor_msgs::PointCloud2::Ptr pcl_msg, std::string frame)
+bool PclIntegrator::transformPCL(sensor_msgs::PointCloud2::Ptr pcl_msg, std::string frame)
 {
     geometry_msgs::TransformStamped transformStamped;
     try
