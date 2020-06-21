@@ -17,16 +17,34 @@ PclIntegrator::PclIntegrator(std::string fixed_frame, const Window& window, tf2_
 {
 }
 
+/*
+sensor_msgs::PointCloud2::Ptr PclIntegrator::transformPCL(sensor_msgs::PointCloud2::Ptr pcl_msg, std::string frame)
+{
+    geometry_msgs::TransformStamped transformStamped;
+    try
+    {
+        transformStamped = tf_buffer_->lookupTransform(frame, pcl_msg->header.frame_id, pcl_msg->header.stamp);
+    }
+    catch (tf2::TransformException &ex)
+    {
+        ROS_ERROR("%s", ex.what());
+        ROS_ERROR("%s: cannot transform incoming pcl to frame %s.", __func__, frame.c_str());
+        return false;
+    }
+    tf2::doTransform(*pcl_msg, *pcl_msg, transformStamped);
+    return true;
+}
+*/
 bool PclIntegrator::integrate(const sensor_msgs::PointCloud2::ConstPtr& pcl_msg_orig)
 {
     sensor_msgs::PointCloud2::Ptr pcl_msg(new sensor_msgs::PointCloud2);
     *pcl_msg = *pcl_msg_orig;
-    geometry_msgs::TransformStamped transformStamped;
     if (!cloud_buffer_.empty() && cloud_buffer_.back()->header.stamp == pcl_msg->header.stamp)
     {
         // ignore same point cloud (timestamp wise)
         return false;
     }
+    geometry_msgs::TransformStamped transformStamped;
     try
     {
         transformStamped = tf_buffer_->lookupTransform(fixed_frame_, pcl_msg->header.frame_id, pcl_msg->header.stamp);
@@ -37,8 +55,9 @@ bool PclIntegrator::integrate(const sensor_msgs::PointCloud2::ConstPtr& pcl_msg_
         ROS_ERROR("%s: cannot transform incoming pcl to fixed frame %s.", __func__, fixed_frame_.c_str());
         return false;
     }
-
     tf2::doTransform(*pcl_msg, *pcl_msg, transformStamped);
+
+
     cloud_buffer_.push_back(pcl_msg);
 
     int buffer_size = std::max(max_buffer_size_, 1);
@@ -53,6 +72,7 @@ bool PclIntegrator::integrate(const sensor_msgs::PointCloud2::ConstPtr& pcl_msg_
     }
     return true;
 }
+
 
 sensor_msgs::PointCloud2::Ptr PclIntegrator::integratedCloud(std::string target_frame, bool crop) const
 {    
@@ -140,7 +160,7 @@ sensor_msgs::PointCloud2::Ptr PclIntegrator::crop_pcl(const sensor_msgs::PointCl
     {
         if (window_.is_inside(*it_x, *it_y))
         {
-            // you need to make sure, that you push all point data into the new point cloud!!!
+            // you need to make sure, that you push all point data into the new point cloud!!
             int data_start = cloud_index*point_step;
             int data_end = (cloud_index+1)*point_step;
             cropped_data.insert(cropped_data.end(), cloud_data.begin()+data_start, cloud_data.begin()+data_end);

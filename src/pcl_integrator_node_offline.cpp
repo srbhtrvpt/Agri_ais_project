@@ -1,6 +1,8 @@
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
 #include <tf2_msgs/TFMessage.h>
+#include <cxxopts.hpp>
+
 
 #include "pcl_integrator.h"
 
@@ -8,6 +10,57 @@ bool fillTfBufferFromBag(rosbag::View& view, ros::Duration bagDuration ,tf2_ros:
 
 int main(int argc, char *argv[])
 {
+    cxxopts::Options options("pcl_integrator_offline", "pcl_integrator_offline_node");
+
+    options.add_options()
+        ("f,fixed_frame", "fixed frame for integration", cxxopts::value<std::string>()->default_value("odom"))
+        ("bf,base_footprint", "base footprint frame to crop", cxxopts::value<std::string>()->default_value("base_footprint"))
+        ("i,input_bag_path", "bag for input bag with raw pcls", cxxopts::value<std::string>()->default_value("/home/srbh/agrirobo_proj/with_pcls/largeplants.bag"))
+        ("t,pcl_topic", "the pcl topic to integrate", cxxopts::value<std::string>()->default_value("/sensor/laser/vlp16/front/pointcloud_xyzi"))
+        ("c,crop_flag", "Enable cropping pcl", cxxopts::value<bool>()->default_value("true"))
+        ("b,max_buffer_size", "Param maximum buffer size", cxxopts::value<int>()->default_value("10"))
+        ("x,size_x", "Param x for crop box in m", cxxopts::value<float>()->default_value("8."))
+        ("y,size_y", "Param y for crop box in m", cxxopts::value<float>()->default_value("6."))
+        ("ox,offset_x", "Param x offset for crop box in m", cxxopts::value<float>()->default_value("1."))
+        ("oy,offset_y", "Param y offset for crop box in m", cxxopts::value<float>()->default_value("0."))
+        ("h,help", "Print usage")
+    ;
+
+    auto result = options.parse(argc, argv);
+
+    if (result.count("help"))
+    {
+      std::cout << options.help() << std::endl;
+      exit(0);
+    }
+    std::string fixed_frame;
+    if (result.count("fixed_frame"))
+    {
+        fixed_frame = result["fixed_frame"].as<std::string>();
+    }
+    std::string base_footprint;
+    if (result.count("base_footprint"))
+    {
+        base_footprint = result["base_footprint"].as<std::string>();
+    }
+    std::string input_bag_path;
+    if (result.count("input_bag_path"))
+    {
+        input_bag_path = result["input_bag_path"].as<std::string>();
+    }
+    std::string pcl_topic;
+    if (result.count("pcl_topic"))
+    {
+        pcl_topic = result["pcl_topic"].as<std::string>();
+    }
+      
+    bool crop_flag = result["crop_flag"].as<bool>();
+    int max_buffer_size = result["max_buffer_size"].as<int>();
+    float size_x = result["size_x"].as<float>();
+    float size_y = result["size_y"].as<float>();
+    float offset_x = result["offset_x"].as<float>();
+    float offset_y = result["offset_y"].as<float>();
+/*
     bool crop_flag = true;
     int max_buffer_size = 10;
     float size_x = 8.;
@@ -18,11 +71,9 @@ int main(int argc, char *argv[])
     std::string base_footprint = "base_footprint";
     std::string target_frame = base_footprint;
     std::string input_bag_path = "/home/srbh/agrirobo_proj/with_pcls/largeplants.bag";
-
-    std::string pcl_topic = "/sensor/laser/vlp16/front/pointcloud_xyzi";
+    std::string pcl_topic = "/sensor/laser/vlp16/front/pointcloud_xyzi"; 
     
-    // TODO: read paramters from command line (use argparser and argv)!!!
-    //target_frame = base_footprint;
+*/
 
     // initialize ros
     rosbag::Bag input_bag, output_bag;
