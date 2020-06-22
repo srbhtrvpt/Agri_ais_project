@@ -10,7 +10,7 @@ normalized_curvature_df=(curvature_data-curvature_data.min())/(curvature_data.ma
 
 
 fig1 = plt.figure(1)
-plt.scatter(intensity_data['values'], curvature_data['values'], s= 0.01**2)
+plt.scatter(normalized_intensity_df['values'], normalized_curvature_df['values'], s= 0.01**2, )
 fig1.savefig(path + "int_vs_curv.png", dpi=400)
 fig2 = plt.figure(2)
 plt.boxplot(intensity_data['values'], showmeans=True, meanline=True)
@@ -24,6 +24,8 @@ fig4.savefig(path + "norm_intensity_boxplot.png", dpi=fig4.dpi)
 fig5 = plt.figure(5)
 plt.boxplot(normalized_curvature_df['values'], showmeans=True, meanline=True)
 fig5.savefig(path + "norm_curvature_boxplot.png", dpi=fig5.dpi)
-
+fig6 = plt.figure(6)
+plt.hist2d(normalized_intensity_df['values'], normalized_curvature_df['values'], 100)
+fig6.savefig(path + "int_curvature_hist2d.png", dpi=fig6.dpi)
 
 

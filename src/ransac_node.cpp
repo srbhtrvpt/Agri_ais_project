@@ -281,7 +281,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
                 {
                     ROS_ERROR("%s: error writing value %.9f.", __func__, cloud_normals->points[i].curvature);
                 }
-            
+            }
             if (cloud_normals->points[i].curvature < curvature_threshold)
             {
                 color.r = 1.0;
