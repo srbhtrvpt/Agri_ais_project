@@ -257,7 +257,9 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     {
         sensor_msgs::PointCloud2ConstIterator<float> it_in(*cloud_ros, "intensity");
         for (; it_in != it_in.end(); ++it_in)
-        {   
+        {   std::string filename = std::to_string(cloud_ros->header.stamp.toSec());
+            filename += "_" + std::to_string(cloud_ros->header.stamp.toNSec());
+            filename += "_curvature.txt";
             if(!write_to_file(filepath+"intensity.txt", std::to_string(*it_in)))
             {
                 ROS_ERROR("%s: error writing value %.9f.", __func__, *it_in);
@@ -277,9 +279,11 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
             curv_avg += cloud_normals->points[i].curvature;
             if(save_flag)
             {
-                if(!write_to_file(filepath+"curvature.txt", std::to_string(cloud_normals->points[i].curvature)))
+                std::string filename = std::to_string(cloud_normals->header.stamp);
+                filename += "_curvature.txt";
+                if(!write_to_file(filepath+filename, std::to_string(cloud_normals->points[i].curvature)))
                 {
-                    ROS_ERROR("%s: error writing value %.9f.", __func__, cloud_normals->points[i].curvature);
+                    ROS_ERROR("%s: error writing value %.9f", __func__, cloud_normals->points[i].curvature);
                 }
             }
             if (cloud_normals->points[i].curvature < curvature_threshold)

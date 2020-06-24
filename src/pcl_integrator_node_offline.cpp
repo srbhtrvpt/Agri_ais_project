@@ -4,7 +4,7 @@
 #include <cxxopts.hpp>
 
 
-#include "pcl_integrator.h"
+#include "myproject1/pcl_integrator.h"
 
 bool fillTfBufferFromBag(rosbag::View& view, ros::Duration bagDuration ,tf2_ros::Buffer* tfBuffer);
 
@@ -60,6 +60,7 @@ int main(int argc, char *argv[])
     float size_y = result["size_y"].as<float>();
     float offset_x = result["offset_x"].as<float>();
     float offset_y = result["offset_y"].as<float>();
+    std::string target_frame = base_footprint;
 /*
     bool crop_flag = true;
     int max_buffer_size = 10;

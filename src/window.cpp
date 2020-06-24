@@ -1,4 +1,4 @@
-#include "window.h"
+#include "myproject1/window.h"
 
 #include <iostream>
 
