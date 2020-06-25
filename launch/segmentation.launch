@@ -9,8 +9,8 @@
         <!--0 to 100-->
         <param name="normal_visualisation_scale" value="33" /> 
         <!--param name="curvature_threshold" value="0.08f" /-->
-        <!--param name="output_filepath" value="/home/srbh/agrirobo_proj/with_pcls/" /-->
-        <!--param name="save_flag" value="true" / -->
+        <param name="output_filepath" value="/home/srbh/agrirobo_proj/with_pcls/data" />
+        <param name="Save_data_to_text" value="true" />
 
         <remap from="input_cloud" to="/sensor/laser/vlp16/front/integrated_pointcloud_xyzi"/>
         <remap from="output_cloud" to="/sensor/laser/vlp16/front/point_cloud_outliers"/>

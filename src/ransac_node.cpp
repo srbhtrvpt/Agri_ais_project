@@ -25,7 +25,7 @@
 
 ros::Publisher point_cloud_pub, point_cloud_pub1, point_cloud_pub2, vis_marker_pub, vis_marker_pub1;
 
-typedef pcl::PointXYZ PointT;
+typedef pcl::PointXYZI PointT;
 typedef pcl::Normal PointNT;
 typedef pcl::PointCloud<PointT> PointCloud;
 typedef pcl::PointCloud<PointNT> PointCloudN;
@@ -217,10 +217,10 @@ std::vector<uint8_t> floattoeight(float argn)
     return point_bin;
 }
 
-bool write_to_file(std::string filepath, std::string data)
+bool write_to_file(std::string filep, std::string data)
 {
     std::ofstream file;
-    file.open(filepath, std::ios::out | std::ios::app);
+    file.open(filep, std::ios::out | std::ios::app);
     if (file.fail())
     {
         throw std::ios_base::failure(std::strerror(errno));
@@ -242,6 +242,8 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     pcl::removeNaNFromPointCloud(*cloud_in, *cloud_in, map);
     int counter = 0;
     float curv_avg = 0.f;
+    std::string filename;
+
     visualization_msgs::Marker normal_marker = init_normal_marker(), plane_marker;
 
     //normal estimation
@@ -253,22 +255,19 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     ne.setKSearch(ksearch_radius);
     ne.compute(*cloud_normals);
 
+    /*
     if(save_flag)
     {
         sensor_msgs::PointCloud2ConstIterator<float> it_in(*cloud_ros, "intensity");
         for (; it_in != it_in.end(); ++it_in)
-        {   std::string filename = std::to_string(cloud_ros->header.stamp.toSec());
-            filename += "_" + std::to_string(cloud_ros->header.stamp.toNSec());
-            filename += "_curvature.txt";
-            if(!write_to_file(filepath+"intensity.txt", std::to_string(*it_in)))
+        {   filename = filepath + std::to_string(cloud_ros->header.stamp.toNSec()) + "_intensity.txt";
+            if(!write_to_file(filename , std::to_string(*it_in)))
             {
                 ROS_ERROR("%s: error writing value %.9f.", __func__, *it_in);
             }
         }
-    }
-    
-
-
+    } 
+    */
     for (int i = 0; i < cloud_normals->points.size(); i++)
     {
         if (isfinite(cloud_in->points[i].x) && isfinite(cloud_in->points[i].y) && isfinite(cloud_in->points[i].z) &&
@@ -279,11 +278,15 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
             curv_avg += cloud_normals->points[i].curvature;
             if(save_flag)
             {
-                std::string filename = std::to_string(cloud_normals->header.stamp);
-                filename += "_curvature.txt";
-                if(!write_to_file(filepath+filename, std::to_string(cloud_normals->points[i].curvature)))
+                filename = filepath + std::to_string(cloud_normals->header.stamp) + "_curvature.txt";
+                if(!write_to_file(filename, std::to_string(cloud_normals->points[i].curvature)))
                 {
                     ROS_ERROR("%s: error writing value %.9f", __func__, cloud_normals->points[i].curvature);
+                }
+                filename = filepath + std::to_string(cloud_in->header.stamp) + "_intensity.txt";
+                if(!write_to_file(filename, std::to_string(cloud_in->points[i].intensity)))
+                {
+                    ROS_ERROR("%s: error writing value %.9f", __func__, cloud_in->points[i].intensity);
                 }
             }
             if (cloud_normals->points[i].curvature < curvature_threshold)
@@ -396,7 +399,7 @@ int main(int argc, char *argv[])
     nhPriv.param("Distance_Threshold", DistanceThreshold, 0.05);
     nhPriv.param("NormalDistanceWeight", NormalDistanceWeight, 0.02);
     nhPriv.param("Save_data_to_text", save_flag, false);
-    nhPriv.param<std::string>("output_filepath", filepath, "/home/srbh/agrirobo_proj/with_pcls/");
+    nhPriv.param<std::string>("output_filepath", filepath, "/home/srbh/agrirobo_proj/with_pcls/data/");
     set_pcl_fields();
 
     // ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/sensor/laser/vlp16/front/pointcloud_xyzi", 1, callback);

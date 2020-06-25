@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 
 path = "../data/"
 
-intensity_data = pd.read_csv(path + "intensity.txt", names= ["values"])
-curvature_data = pd.read_csv(path + "curvature.txt", names= ["values"])
+intensity_data = pd.read_csv(path + "1535635761941033_intensity.txt", names= ["values"])
+curvature_data = pd.read_csv(path + "1535635761941033_curvature.txt", names= ["values"])
 normalized_intensity_df=(intensity_data-intensity_data.min())/(intensity_data.max()-intensity_data.min())
 normalized_curvature_df=(curvature_data-curvature_data.min())/(curvature_data.max()-curvature_data.min())
 
