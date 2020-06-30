@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.mixture import GaussianMixture
+
 
 path = "../data/"
 
@@ -61,4 +63,15 @@ ax.set_xlabel("intensity")
 ax.set_ylabel("curvature")
 fig5.suptitle("curvature vs intensity kmeans scatter")
 fig5.savefig(path + "int_vs_curv_kmeans.png", dpi=400)
+
+fig6, ax = plt.subplots()
+gmm = GaussianMixture(n_components=2, covariance_type= 'full').fit(data)
+labels = gmm.predict(data)
+ax.scatter(data['intensity'], data['curvature'], c=labels, cmap='viridis')
+ax.set_xlabel("intensity")
+ax.set_ylabel("curvature")
+fig6.suptitle("curvature vs intensity gmm scatter")
+fig6.savefig(path + "int_vs_curv_gmm.png", dpi=400)
+
+
 
