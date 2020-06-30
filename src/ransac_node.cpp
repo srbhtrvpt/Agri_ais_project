@@ -202,7 +202,8 @@ std::vector<int> neighborhood_plus(int cc, int rr)
 std::vector<uint8_t> floattoeight(float argn)
 {
     std::vector<uint8_t> point_bin(4);
-    union {
+    union
+    {
         float f;
         struct
         {
@@ -228,6 +229,7 @@ bool write_to_file(std::string filep, std::string data)
     }
     file.exceptions(file.exceptions() | std::ios::failbit | std::ifstream::badbit);
     file << data << std::endl;
+    ROS_ERROR("writing value to file");
     file.close();
     return true;
 }
@@ -270,21 +272,21 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     */
     for (int i = 0; i < cloud_normals->points.size(); i++)
     {
-        if (isfinite(cloud_in->points[i].x) && isfinite(cloud_in->points[i].y) && isfinite(cloud_in->points[i].z) &&
+        if (isfinite(cloud_in->points[i].x) && isfinite(cloud_in->points[i].y) && isfinite(cloud_in->points[i].z) && isfinite(cloud_in->points[i].intensity) &&
             isfinite(cloud_normals->points[i].normal_z) && isfinite(cloud_normals->points[i].normal_y) &&
             isfinite(cloud_normals->points[i].normal_x) && isfinite(cloud_normals->points[i].curvature))
         {
             counter++;
             curv_avg += cloud_normals->points[i].curvature;
-            if(save_flag)
+            if (save_flag)
             {
                 filename = filepath + std::to_string(cloud_normals->header.stamp) + "_curvature.txt";
-                if(!write_to_file(filename, std::to_string(cloud_normals->points[i].curvature)))
+                if (!write_to_file(filename, std::to_string(cloud_normals->points[i].curvature)))
                 {
                     ROS_ERROR("%s: error writing value %.9f", __func__, cloud_normals->points[i].curvature);
                 }
                 filename = filepath + std::to_string(cloud_in->header.stamp) + "_intensity.txt";
-                if(!write_to_file(filename, std::to_string(cloud_in->points[i].intensity)))
+                if (!write_to_file(filename, std::to_string(cloud_in->points[i].intensity)))
                 {
                     ROS_ERROR("%s: error writing value %.9f", __func__, cloud_in->points[i].intensity);
                 }
@@ -391,14 +393,14 @@ int main(int argc, char *argv[])
 {
     ros::init(argc, argv, "ransac_node");
     ros::NodeHandle nh;
-    ros::NodeHandle nhPriv("~priv");
+    ros::NodeHandle nhPriv("~");
     nhPriv.param("neighborhood_radius", neighborhood_radius, 2);
     nhPriv.param("ksearch_radius", ksearch_radius, 16);
     nhPriv.param("normal_visualisation_scale", normal_visualisation_scale, 30);
     nhPriv.param("curvature_threshold", curvature_threshold, 0.08f);
     nhPriv.param("Distance_Threshold", DistanceThreshold, 0.05);
     nhPriv.param("NormalDistanceWeight", NormalDistanceWeight, 0.02);
-    nhPriv.param("Save_data_to_text", save_flag, false);
+    nhPriv.param("save_flag", save_flag, false);
     nhPriv.param<std::string>("output_filepath", filepath, "/home/srbh/agrirobo_proj/with_pcls/data/");
     set_pcl_fields();
 

@@ -1,0 +1,3 @@
+<launch>
+   <node pkg="myproject1" type="pcl_integrator_node_offline" name="pcl_integrator_node_offline" output="screen" args="-f odom -b base_footprint -i /home/srbh/agrirobo_proj/with_pcls/largeplants.bag -t /sensor/laser/vlp16/front/pointcloud_xyzi -c true -m 10 -x 8. -y 6. -w 1. -z 0." />
+</launch>

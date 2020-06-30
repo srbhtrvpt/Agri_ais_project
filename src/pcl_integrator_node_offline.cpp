@@ -14,15 +14,15 @@ int main(int argc, char *argv[])
 
     options.add_options()
         ("f,fixed_frame", "fixed frame for integration", cxxopts::value<std::string>()->default_value("odom"))
-        ("bf,base_footprint", "base footprint frame to crop", cxxopts::value<std::string>()->default_value("base_footprint"))
+        ("b,crop_frame", "base footprint frame to crop", cxxopts::value<std::string>()->default_value("base_footprint"))
         ("i,input_bag_path", "bag for input bag with raw pcls", cxxopts::value<std::string>()->default_value("/home/srbh/agrirobo_proj/with_pcls/largeplants.bag"))
         ("t,pcl_topic", "the pcl topic to integrate", cxxopts::value<std::string>()->default_value("/sensor/laser/vlp16/front/pointcloud_xyzi"))
         ("c,crop_flag", "Enable cropping pcl", cxxopts::value<bool>()->default_value("true"))
-        ("b,max_buffer_size", "Param maximum buffer size", cxxopts::value<int>()->default_value("10"))
+        ("m,max_buffer_size", "Param maximum buffer size", cxxopts::value<int>()->default_value("10"))
         ("x,size_x", "Param x for crop box in m", cxxopts::value<float>()->default_value("8."))
         ("y,size_y", "Param y for crop box in m", cxxopts::value<float>()->default_value("6."))
-        ("ox,offset_x", "Param x offset for crop box in m", cxxopts::value<float>()->default_value("1."))
-        ("oy,offset_y", "Param y offset for crop box in m", cxxopts::value<float>()->default_value("0."))
+        ("w,offset_x", "Param x offset for crop box in m", cxxopts::value<float>()->default_value("1."))
+        ("z,offset_y", "Param y offset for crop box in m", cxxopts::value<float>()->default_value("0."))
         ("h,help", "Print usage")
     ;
 
@@ -38,10 +38,10 @@ int main(int argc, char *argv[])
     {
         fixed_frame = result["fixed_frame"].as<std::string>();
     }
-    std::string base_footprint;
-    if (result.count("base_footprint"))
+    std::string crop_frame;
+    if (result.count("crop_frame"))
     {
-        base_footprint = result["base_footprint"].as<std::string>();
+        crop_frame = result["crop_frame"].as<std::string>();
     }
     std::string input_bag_path;
     if (result.count("input_bag_path"))
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     float size_y = result["size_y"].as<float>();
     float offset_x = result["offset_x"].as<float>();
     float offset_y = result["offset_y"].as<float>();
-    std::string target_frame = base_footprint;
+    std::string target_frame = crop_frame;
 /*
     bool crop_flag = true;
     int max_buffer_size = 10;
@@ -86,6 +86,7 @@ int main(int argc, char *argv[])
     std::vector<std::string> topics;
     topics.push_back("/tf");
     rosbag::View view(input_bag, rosbag::TopicQuery(topics));
+    ros::Time::init();
     ros::Time start, end;
     start = view.getBeginTime();
     end = view.getEndTime();
@@ -98,7 +99,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    Window window(base_footprint, size_x, size_y, offset_x, offset_y);
+    Window window(crop_frame, size_x, size_y, offset_x, offset_y);
     PclIntegrator pcl_integrator(fixed_frame, window, &tf_buffer, max_buffer_size);
     
     rosbag::View view_all(input_bag);

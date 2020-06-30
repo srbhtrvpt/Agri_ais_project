@@ -42,6 +42,7 @@ bool PclIntegrator::integrate(const sensor_msgs::PointCloud2::ConstPtr& pcl_msg_
     if (!cloud_buffer_.empty() && cloud_buffer_.back()->header.stamp == pcl_msg->header.stamp)
     {
         // ignore same point cloud (timestamp wise)
+        ROS_ERROR("%s: same timestamp pcl or cloud buffer empty. %s ---- %s", __func__, std::to_string(cloud_buffer_.back()->header.stamp.toNSec()).c_str(), std::to_string(pcl_msg->header.stamp.toNSec()).c_str());
         return false;
     }
     geometry_msgs::TransformStamped transformStamped;

@@ -1,4 +1,4 @@
 <launch>
     <param name="use_sim_time" value="true" />
-    <node pkg="rosbag" type="play" name="integrated_player" output="screen" args="--clock -l /home/srbh/agrirobo_proj/with_pcls/integrated.bag"/>
+    <node pkg="rosbag" type="play" name="integrated_player" output="screen" args="--clock /home/srbh/agrirobo_proj/with_pcls/integrated.bag"/>
 </launch>

@@ -2,16 +2,15 @@
 
     <node name="ransac_node" pkg="myproject1" type="ransac_node" output="screen">
         <param name="neighborhood_radius" value="2" />
-        
+        <param name="output_filepath" value="/home/srbh/agrirobo_proj/with_pcls/data/" />
+        <param name="save_flag" value="false" />
         <param name="ksearch_radius" value="16" />
         <param name="Distance_Threshold" value="0.05" />
         <param name="NormalDistanceWeight" value="0.02" />
-        <!--0 to 100-->
         <param name="normal_visualisation_scale" value="33" /> 
+        <!--0 to 100-->
         <!--param name="curvature_threshold" value="0.08f" /-->
-        <param name="output_filepath" value="/home/srbh/agrirobo_proj/with_pcls/data" />
-        <param name="Save_data_to_text" value="true" />
-
+        
         <remap from="input_cloud" to="/sensor/laser/vlp16/front/integrated_pointcloud_xyzi"/>
         <remap from="output_cloud" to="/sensor/laser/vlp16/front/point_cloud_outliers"/>
         <remap from="output_cloud1" to="/sensor/laser/vlp16/front/point_cloud_inliers"/>
