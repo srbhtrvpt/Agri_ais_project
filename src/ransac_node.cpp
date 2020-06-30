@@ -26,9 +26,12 @@
 ros::Publisher point_cloud_pub, point_cloud_pub1, point_cloud_pub2, vis_marker_pub, vis_marker_pub1;
 
 typedef pcl::PointXYZI PointT;
+typedef pcl::PointXYZINormal PointNCT;
 typedef pcl::Normal PointNT;
 typedef pcl::PointCloud<PointT> PointCloud;
 typedef pcl::PointCloud<PointNT> PointCloudN;
+typedef pcl::PointCloud<PointNCT> PointCloudNC;
+
 
 std::vector<uint8_t> floattoeight(float argn);
 std::vector<int> neighborhood_sq(int cc, int rr);
@@ -145,6 +148,11 @@ void set_pcl_fields()
     fields.push_back(pt_field);
     pt_field.name = "curvature";
     pt_field.offset = 12;
+    pt_field.datatype = pt_field.FLOAT32;
+    pt_field.count = 1;
+    fields.push_back(pt_field);
+    pt_field.name = "intensity";
+    pt_field.offset = 16;
     pt_field.datatype = pt_field.FLOAT32;
     pt_field.count = 1;
     fields.push_back(pt_field);
@@ -318,6 +326,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
             publishable_point(cloud_in->points[i].y);
             publishable_point(cloud_in->points[i].z);
             publishable_point(cloud_normals->points[i].curvature);
+            publishable_point(cloud_in->points[i].intensity);
         }
     }
     //std::cout << "count" <<  counter << "size" << cloud_normals->points.size() <<  "points" << points.size() <<  "\n";
@@ -331,7 +340,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     cloud_out->data = point_data;
     cloud_out->width = counter;
     cloud_out->row_step = counter;
-    cloud_out->point_step = 16; //CHANGE IF MORE FIELDS
+    cloud_out->point_step = 20; //CHANGE IF MORE FIELDS (no. fields x 4)
     //fixed
     cloud_out->is_bigendian = false;
     cloud_out->height = 1;
@@ -339,6 +348,11 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     normal_marker.header.frame_id = cloud_ros->header.frame_id;
     normal_marker.header.stamp = cloud_ros->header.stamp;
 
+    if(save_flag)
+    {
+        pcl::io::savePCDFile(filepath + std::to_string(cloud_out->header.stamp.toNSec()) + ".pcd", *cloud_out);
+
+    }
     point_cloud_pub2.publish(cloud_out);
     vis_marker_pub.publish(normal_marker);
 
