@@ -32,36 +32,21 @@ typedef pcl::PointCloud<PointT> PointCloud;
 typedef pcl::PointCloud<PointNT> PointCloudN;
 typedef pcl::PointCloud<PointNCT> PointCloudNC;
 
+/*
+std::vector<int> neighborhood_plus(int cc, int rr, PointCloud::Ptr cloud_in);
+std::vector<int> neighborhood_sq(int cc, int rr, PointCloud::Ptr cloud_in);
+bool point_valid(int cc, int rr, PointCloud::Ptr cloud_in); */
 
-std::vector<uint8_t> floattoeight(float argn);
-std::vector<int> neighborhood_sq(int cc, int rr);
-void publishable_point(float pt);
 visualization_msgs::Marker init_normal_marker();
 visualization_msgs::Marker init_plane_marker(tf2::Quaternion marker_quat, pcl::ModelCoefficients::Ptr coeffs);
-void set_pcl_fields();
-bool point_valid(int cc, int rr);
 bool write_to_file(std::string filepath, std::string data);
-std::vector<int> neighborhood_plus(int cc, int rr);
 tf2::Quaternion set_orientation(pcl::ModelCoefficients::Ptr coeffs);
 
-PointCloud::Ptr cloud_in(new PointCloud), cloud_inliers(new PointCloud), cloud_outliers(new PointCloud);
-PointCloudN::Ptr cloud_normals(new PointCloudN);
-PointCloud::iterator it;
-sensor_msgs::PointCloud2::Ptr output_ground(new sensor_msgs::PointCloud2), output_plants(new sensor_msgs::PointCloud2), cloud_out(new sensor_msgs::PointCloud2);
-pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
-pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
 int neighborhood_radius, ksearch_radius, normal_visualisation_scale;
 bool save_flag;
 double NormalDistanceWeight, DistanceThreshold;
 float curvature_threshold;
 std::string filepath;
-std::vector<uint8_t> point_data;
-
-std_msgs::Header header_cloud_out;
-std::vector<sensor_msgs::PointField> fields;
-sensor_msgs::PointField pt_field;
-std_msgs::ColorRGBA color;
-geometry_msgs::Point p;
 
 tf2::Quaternion set_orientation(pcl::ModelCoefficients::Ptr coeffs)
 {
@@ -79,15 +64,57 @@ tf2::Quaternion set_orientation(pcl::ModelCoefficients::Ptr coeffs)
     return quat;
 }
 
-void publishable_point(float pt)
+/*
+
+bool point_valid(int cc, int rr, PointCloud::Ptr cloud_in)
 {
-    std::vector<uint8_t> point_binary;
-    point_binary = floattoeight(pt);
-    for (int j = 0; j < 4; j++)
+    int point_indice = (rr)*cloud_in->width + (cc);
+    if ((point_indice <= cloud_in->points.size() - 1) && (point_indice >= 0))
     {
-        point_data.push_back(point_binary[j]);
+        if (isfinite(cloud_in->at(cc, rr).x) && isfinite(cloud_in->at(cc, rr).y) && isfinite(cloud_in->at(cc, rr).z))
+        {
+            return true;
+        }
     }
+    return false;
 }
+
+std::vector<int> neighborhood_sq(int cc, int rr, PointCloud::Ptr cloud_in)
+{
+    std::vector<int> result;
+    for (int i = -neighborhood_radius; i <= neighborhood_radius; i++)
+    {
+        for (int j = -neighborhood_radius; j <= neighborhood_radius; j++)
+        {
+            if (point_valid(cc + j, rr + i, cloud_in))
+            {
+                result.push_back((rr + i) * cloud_in->width + (cc + j));
+            }
+        }
+    }
+    return result;
+}
+
+std::vector<int> neighborhood_plus(int cc, int rr, PointCloud::Ptr cloud_in)
+{
+    std::vector<int> result;
+    for (int i = -neighborhood_radius; i <= neighborhood_radius; i++)
+    {
+        if (point_valid(cc, rr + i, cloud_in))
+        {
+            result.push_back((rr + i) * cloud_in->width + (cc));
+        }
+    }
+    for (int j = -neighborhood_radius; j <= neighborhood_radius; j++)
+    {
+        if (point_valid(cc + j, rr, cloud_in))
+        {
+            result.push_back((rr)*cloud_in->width + (cc + j));
+        }
+    }
+    return result;
+}
+ */
 
 visualization_msgs::Marker init_normal_marker()
 {
@@ -128,104 +155,6 @@ visualization_msgs::Marker init_plane_marker(tf2::Quaternion marker_quat, pcl::M
     return plane_marker;
 }
 
-void set_pcl_fields()
-{
-    //global pt_field and fields
-    pt_field.name = 'x';
-    pt_field.offset = 0;
-    pt_field.datatype = pt_field.FLOAT32;
-    pt_field.count = 1;
-    fields.push_back(pt_field);
-    pt_field.name = 'y';
-    pt_field.offset = 4;
-    pt_field.datatype = pt_field.FLOAT32;
-    pt_field.count = 1;
-    fields.push_back(pt_field);
-    pt_field.name = 'z';
-    pt_field.offset = 8;
-    pt_field.datatype = pt_field.FLOAT32;
-    pt_field.count = 1;
-    fields.push_back(pt_field);
-    pt_field.name = "curvature";
-    pt_field.offset = 12;
-    pt_field.datatype = pt_field.FLOAT32;
-    pt_field.count = 1;
-    fields.push_back(pt_field);
-    pt_field.name = "intensity";
-    pt_field.offset = 16;
-    pt_field.datatype = pt_field.FLOAT32;
-    pt_field.count = 1;
-    fields.push_back(pt_field);
-}
-
-bool point_valid(int cc, int rr)
-{
-    int point_indice = (rr)*cloud_in->width + (cc);
-    if ((point_indice <= cloud_in->points.size() - 1) && (point_indice >= 0))
-    {
-        if (isfinite(cloud_in->at(cc, rr).x) && isfinite(cloud_in->at(cc, rr).y) && isfinite(cloud_in->at(cc, rr).z))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-std::vector<int> neighborhood_sq(int cc, int rr)
-{
-    std::vector<int> result;
-    for (int i = -neighborhood_radius; i <= neighborhood_radius; i++)
-    {
-        for (int j = -neighborhood_radius; j <= neighborhood_radius; j++)
-        {
-            if (point_valid(cc + j, rr + i))
-            {
-                result.push_back((rr + i) * cloud_in->width + (cc + j));
-            }
-        }
-    }
-    return result;
-}
-
-std::vector<int> neighborhood_plus(int cc, int rr)
-{
-    std::vector<int> result;
-    for (int i = -neighborhood_radius; i <= neighborhood_radius; i++)
-    {
-        if (point_valid(cc, rr + i))
-        {
-            result.push_back((rr + i) * cloud_in->width + (cc));
-        }
-    }
-    for (int j = -neighborhood_radius; j <= neighborhood_radius; j++)
-    {
-        if (point_valid(cc + j, rr))
-        {
-            result.push_back((rr)*cloud_in->width + (cc + j));
-        }
-    }
-    return result;
-}
-
-std::vector<uint8_t> floattoeight(float argn)
-{
-    std::vector<uint8_t> point_bin(4);
-    union
-    {
-        float f;
-        struct
-        {
-            uint8_t ut0, ut1, ut2, ut3;
-        } bytes;
-    } converter = {.f = argn};
-    //std::cout << "float" << argn << "bin" << unsigned(converter.bytes.ut1) << unsigned(converter.bytes.ut2) << unsigned(converter.bytes.ut3) << unsigned(converter.bytes.ut4) << std::endl;
-    point_bin[0] = converter.bytes.ut0;
-    point_bin[1] = converter.bytes.ut1;
-    point_bin[2] = converter.bytes.ut2;
-    point_bin[3] = converter.bytes.ut3;
-    return point_bin;
-}
-
 bool write_to_file(std::string filep, std::string data)
 {
     std::ofstream file;
@@ -237,7 +166,7 @@ bool write_to_file(std::string filep, std::string data)
     }
     file.exceptions(file.exceptions() | std::ios::failbit | std::ifstream::badbit);
     file << data << std::endl;
-    ROS_ERROR("writing value to file");
+    ROS_INFO_THROTTLE(1, "w");
     file.close();
     return true;
 }
@@ -245,16 +174,23 @@ bool write_to_file(std::string filep, std::string data)
 void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
 {
 
-    point_data.clear();
+    PointCloud::Ptr cloud_in(new PointCloud), cloud_inliers(new PointCloud), cloud_outliers(new PointCloud);
+    PointCloudN::Ptr cloud_normals(new PointCloudN);
+    PointCloudNC::Ptr cloud_out(new PointCloudNC);
+    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+    pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+    PointNCT point;
+    std_msgs::ColorRGBA color;
+    geometry_msgs::Point p;
+    int counter = 0;
+    float curv_avg = 0.f;
+    std::string filename;
+    visualization_msgs::Marker normal_marker = init_normal_marker(), plane_marker;
+
     pcl::fromROSMsg(*cloud_ros, *cloud_in);
     std::vector<int> map;
     cloud_in->is_dense = false;
     pcl::removeNaNFromPointCloud(*cloud_in, *cloud_in, map);
-    int counter = 0;
-    float curv_avg = 0.f;
-    std::string filename;
-
-    visualization_msgs::Marker normal_marker = init_normal_marker(), plane_marker;
 
     //normal estimation
     pcl::NormalEstimation<PointT, PointNT> ne;
@@ -265,19 +201,6 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     ne.setKSearch(ksearch_radius);
     ne.compute(*cloud_normals);
 
-    /*
-    if(save_flag)
-    {
-        sensor_msgs::PointCloud2ConstIterator<float> it_in(*cloud_ros, "intensity");
-        for (; it_in != it_in.end(); ++it_in)
-        {   filename = filepath + std::to_string(cloud_ros->header.stamp.toNSec()) + "_intensity.txt";
-            if(!write_to_file(filename , std::to_string(*it_in)))
-            {
-                ROS_ERROR("%s: error writing value %.9f.", __func__, *it_in);
-            }
-        }
-    } 
-    */
     for (int i = 0; i < cloud_normals->points.size(); i++)
     {
         if (isfinite(cloud_in->points[i].x) && isfinite(cloud_in->points[i].y) && isfinite(cloud_in->points[i].z) && isfinite(cloud_in->points[i].intensity) &&
@@ -299,6 +222,8 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
                     ROS_ERROR("%s: error writing value %.9f", __func__, cloud_in->points[i].intensity);
                 }
             }
+
+            //normal marker
             if (cloud_normals->points[i].curvature < curvature_threshold)
             {
                 color.r = 1.0;
@@ -322,39 +247,33 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
             normal_marker.points.push_back(p);
             normal_marker.colors.push_back(color);
 
-            publishable_point(cloud_in->points[i].x);
-            publishable_point(cloud_in->points[i].y);
-            publishable_point(cloud_in->points[i].z);
-            publishable_point(cloud_normals->points[i].curvature);
-            publishable_point(cloud_in->points[i].intensity);
+            //pcl xyznci
+            point.x = cloud_in->points[i].x;
+            point.y = cloud_in->points[i].y;
+            point.z = cloud_in->points[i].z;
+            point.normal_x = cloud_normals->points[i].normal_x;
+            point.normal_y = cloud_normals->points[i].normal_y;
+            point.normal_z = cloud_normals->points[i].normal_z;
+            point.intensity = cloud_in->points[i].intensity;
+            point.curvature = cloud_normals->points[i].curvature;
+            cloud_out->push_back(point);
         }
     }
-    //std::cout << "count" <<  counter << "size" << cloud_normals->points.size() <<  "points" << points.size() <<  "\n";
     curv_avg = float(curv_avg / counter);
+
+    //std::cout << "count" <<  counter << "size" << cloud_normals->points.size() <<  "points" << points.size() <<  "\n";
     //std::cout << "avg " << curv_avg  << std::endl;
-    //setup cloud curvature
-    header_cloud_out.frame_id = cloud_in->header.frame_id;
-    header_cloud_out.stamp = cloud_ros->header.stamp;
-    cloud_out->header = header_cloud_out;
-    cloud_out->fields = fields;
-    cloud_out->data = point_data;
-    cloud_out->width = counter;
-    cloud_out->row_step = counter;
-    cloud_out->point_step = 20; //CHANGE IF MORE FIELDS (no. fields x 4)
-    //fixed
-    cloud_out->is_bigendian = false;
-    cloud_out->height = 1;
 
     normal_marker.header.frame_id = cloud_ros->header.frame_id;
     normal_marker.header.stamp = cloud_ros->header.stamp;
+    vis_marker_pub.publish(normal_marker);
 
-    if(save_flag)
+    cloud_out->header = cloud_in->header;
+    if (save_flag)
     {
-        pcl::io::savePCDFile(filepath + std::to_string(cloud_out->header.stamp.toNSec()) + ".pcd", *cloud_out);
-
+        pcl::io::savePCDFile(filepath + std::to_string(cloud_out->header.stamp) + ".pcd", *cloud_out);
     }
     point_cloud_pub2.publish(cloud_out);
-    vis_marker_pub.publish(normal_marker);
 
     // plane normal model
     pcl::SACSegmentationFromNormals<PointT, PointNT> seg;
@@ -391,21 +310,19 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
         pcl::ExtractIndices<PointT> extract;
         extract.setInputCloud(cloud_in);
         extract.setIndices(inliers);
-        extract.setNegative(false); // Extract the inliers
-        extract.filter(*cloud_inliers);
-        pcl::toROSMsg(*cloud_inliers, *output_ground); // cloud_inliers contains the plane
-        point_cloud_pub1.publish(output_ground);
+        extract.setNegative(false);     // Extract the inliers
+        extract.filter(*cloud_inliers); // cloud_inliers contains the plane
+        point_cloud_pub1.publish(cloud_inliers);
 
         extract.setNegative(true); // Extract the outliers
         extract.filter(*cloud_outliers);
-        pcl::toROSMsg(*cloud_outliers, *output_plants);
-        point_cloud_pub.publish(output_plants);
+        point_cloud_pub.publish(cloud_outliers);
     }
 }
 
 int main(int argc, char *argv[])
 {
-    ros::init(argc, argv, "ransac_node");
+    ros::init(argc, argv, "segmentation_node");
     ros::NodeHandle nh;
     ros::NodeHandle nhPriv("~");
     nhPriv.param("neighborhood_radius", neighborhood_radius, 2);
@@ -416,7 +333,6 @@ int main(int argc, char *argv[])
     nhPriv.param("NormalDistanceWeight", NormalDistanceWeight, 0.02);
     nhPriv.param("save_flag", save_flag, false);
     nhPriv.param<std::string>("output_filepath", filepath, "/home/srbh/agrirobo_proj/with_pcls/data/");
-    set_pcl_fields();
 
     // ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/sensor/laser/vlp16/front/pointcloud_xyzi", 1, callback);
     ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback);

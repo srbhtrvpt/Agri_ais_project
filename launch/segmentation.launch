@@ -1,9 +1,9 @@
 <launch>
 
-    <node name="ransac_node" pkg="myproject1" type="ransac_node" output="screen">
+    <node name="segmentation_node" pkg="myproject1" type="segmentation_node" output="screen">
         <param name="neighborhood_radius" value="2" />
         <param name="output_filepath" value="/home/srbh/agrirobo_proj/with_pcls/data/" />
-        <param name="save_flag" value="false" />
+        <param name="save_flag" value="true" />
         <param name="ksearch_radius" value="16" />
         <param name="Distance_Threshold" value="0.05" />
         <param name="NormalDistanceWeight" value="0.02" />
@@ -14,6 +14,6 @@
         <remap from="input_cloud" to="/sensor/laser/vlp16/front/integrated_pointcloud_xyzi"/>
         <remap from="output_cloud" to="/sensor/laser/vlp16/front/point_cloud_outliers"/>
         <remap from="output_cloud1" to="/sensor/laser/vlp16/front/point_cloud_inliers"/>
-        <remap from="output_cloud2" to="/sensor/laser/vlp16/front/point_cloud_curvature"/>
+        <remap from="output_cloud2" to="/sensor/laser/vlp16/front/point_cloud_xyzinc"/>
     </node>
 </launch>

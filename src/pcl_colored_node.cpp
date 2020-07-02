@@ -119,7 +119,7 @@ void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &info_msg)
 
 int main(int argc, char *argv[])
 {
-    ros::init(argc, argv, "myproject1_node");
+    ros::init(argc, argv, "pcl_colored_node");
     ros::NodeHandle nh;
 
     //todo time sync filter subscriber

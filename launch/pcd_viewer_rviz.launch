@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="pcl_ros" type="pcd_to_pointcloud" name="pcd_to_pointcloud" output="screen" args="/home/srbh/agrirobo_proj/with_pcls/data/1535635806502398.pcd _latch:=true _frame_id:=/odom" />
+</launch>

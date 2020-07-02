@@ -57,8 +57,7 @@ bool PclIntegrator::integrate(const sensor_msgs::PointCloud2::ConstPtr& pcl_msg_
         return false;
     }
     tf2::doTransform(*pcl_msg, *pcl_msg, transformStamped);
-
-
+    ROS_ERROR("transforming and pushing %s", std::to_string(pcl_msg->header.stamp.toNSec()).c_str());
     cloud_buffer_.push_back(pcl_msg);
 
     int buffer_size = std::max(max_buffer_size_, 1);

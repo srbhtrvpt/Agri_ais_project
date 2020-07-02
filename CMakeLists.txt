@@ -79,8 +79,8 @@ target_link_libraries(pcl_integrator_lib
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 
-add_executable(${PROJECT_NAME}_node src/myproject1_node.cpp)
-target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})# ${OpenCV_LIBS})
+add_executable(pcl_colored_node src/pcl_colored_node.cpp)
+target_link_libraries(pcl_colored_node ${catkin_LIBRARIES})# ${OpenCV_LIBS})
 
 add_executable(pcl_integrator_node
   src/pcl_integrator_node.cpp
@@ -98,6 +98,6 @@ target_link_libraries(pcl_integrator_node_offline
   pcl_integrator_lib
   )
 
-add_executable(ransac_node src/ransac_node.cpp)
-target_link_libraries(ransac_node  ${catkin_LIBRARIES})# ${PCL_LIBRARIES})
+add_executable(segmentation_node src/segmentation_node.cpp)
+target_link_libraries(segmentation_node  ${catkin_LIBRARIES})# ${PCL_LIBRARIES})
 

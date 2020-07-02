@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
         }
 
         if(!pcl_integrator.integrate(pcl_msg)){
-            ROS_ERROR("%s: integrating pcl at time %.9f.", __func__, pcl_msg->header.stamp.toSec());
+            //ROS_ERROR("%s: error integrating pcl at time %.9f.", __func__, pcl_msg->header.stamp.toSec());
             continue;
         }
         sensor_msgs::PointCloud2::Ptr integrated_pcl = pcl_integrator.integratedCloud(target_frame, crop_flag);
