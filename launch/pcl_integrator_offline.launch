@@ -1,3 +1,14 @@
 <launch>
-   <node pkg="myproject1" type="pcl_integrator_node_offline" name="pcl_integrator_node_offline" output="screen" args="-f odom -b base_footprint -i /home/srbh/agrirobo_proj/with_pcls/largeplants.bag -t /sensor/laser/vlp16/front/pointcloud_xyzi -c true -m 10 -x 8. -y 6. -w 1. -z 0." />
+   <arg name="fixed_frame" default = "odom" />
+   <arg name="base_footprint" default = "base_footprint" />
+   <arg name="input_bag" default = "/home/srbh/agrirobo_proj/with_pcls/largeplants.bag" />
+   <arg name="topic" default = "/sensor/laser/vlp16/front/pointcloud_xyzi" />
+   <arg name="crop" default = "true" />
+   <arg name="max_buffer_size" default = "10" />
+   <arg name="x" default = "8." />
+   <arg name="y" default = "6." />
+   <arg name="x_offset" default = "1." />
+   <arg name="y_offset" default = "0." />
+
+   <node pkg="myproject1" type="pcl_integrator_node_offline" name="pcl_integrator_node_offline" output="screen" args="-f $(arg fixed_frame) -b $(arg base_footprint) -i $(arg input_bag) -t $(arg topic) -c $(arg crop) -m $(arg max_buffer_size) -x $(arg x) -y $(arg y) -w $(arg x_offset) -z $(arg y_offset)"/>
 </launch>
