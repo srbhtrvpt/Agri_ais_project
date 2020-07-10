@@ -19,7 +19,6 @@
 
 using namespace message_filters;
 ros::Publisher point_cloud_pub;
-//ros::Publisher colored_pt_pub;
 image_geometry::PinholeCameraModel cam_model_;
 ros::Subscriber sub;
 bool cam_model_flag = false;
@@ -33,13 +32,11 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
 {
 
     PointCloud::Ptr cloud_out(new PointCloud);
-    //PointCloud cloud_out;
     PointCloud::Ptr cloud_in(new PointCloud);
     ColoredPointCloud::Ptr cloud_colored(new ColoredPointCloud);
     PointCloud::iterator it;
     PointC color_pt;
     tf::TransformListener listener;
-    static tf::TransformBroadcaster br;
     cv::Point2d uv;
     cv::Mat image_in;
     cv_bridge::CvImagePtr input_bridge;
@@ -67,24 +64,15 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
         ROS_ERROR("%s", ex.what());
     }
 
-    //br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/base_sensor_blackfly_optical_link", "/base_sensor_fx8_laser_link"));
-
-    //todo: convert sensr msgs to pointcloud pcl and transform to non stamped(access it)
-
     pcl_ros::transformPointCloud(*cloud_in, *cloud_out, transform);
     cloud_out->header.frame_id = image->header.frame_id;
-    //pcl_conversions::toPCL(cloud_out->header, image->header);
     if (cam_model_flag == true)
     {
 
-        // for(pcl::PointCloud<pcl::PointXYZRGB>::iterator it = cloud->begin(); it!= cloud->end(); it++)
         for (it = cloud_out->points.begin(); it < cloud_out->points.end(); it++)
         {
-            //tf::Point pt = transform.getOrigin();
-            //cv::Point3d pt_cv(pt.x(), pt.y(), pt.z());
             cv::Point3d pt_cv(it->x, it->y, it->z);
             uv = cam_model_.project3dToPixel(pt_cv);
-            //printf("%f",uv.x);
             if (uv.x > 0 && uv.x < image_in.cols && uv.y < image_in.rows && uv.y > 0)
             {
                 cv::Point3_<uchar> *pix = image_in.ptr<cv::Point3_<uchar>>(uv.y, uv.x);
@@ -95,17 +83,9 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
                 color_pt.rgb = *(float *)(&rgb);
                 cloud_colored->push_back(color_pt);
             }
-
-            //ROS_INFO_STREAM(color_pt);
         }
     }
 
-    //cv::Matx34d projection_matrix=cam_model_.fullProjectionMatrix();
-    //cam_model_.project3dToPixel(cv::Point3d(-0.1392072,-0.02571392, 2.50376511) );
-    //b = nh.advertise<pcl::PointCloud<pcl::PointXYZRGB> > (topic, queue_size);
-    //pub.publish(cloud)
-
-    //cloud->header.frame_id = image->header.frame_id;
     cloud_colored->header = cloud_out->header;
     point_cloud_pub.publish(cloud_colored);
 }
@@ -122,39 +102,20 @@ int main(int argc, char *argv[])
     ros::init(argc, argv, "pcl_colored_node");
     ros::NodeHandle nh;
 
-    //todo time sync filter subscriber
-
-    message_filters::Subscriber<sensor_msgs::Image> image_sub(nh, "/sensor/camera/blackfly/image_rect_color", 1000);
-    message_filters::Subscriber<sensor_msgs::PointCloud2> cloud_sub(nh, "/sensor/laser/fx8/point_cloud", 1000);
+    message_filters::Subscriber<sensor_msgs::Image> image_sub(nh, "input_image", 10);
+    message_filters::Subscriber<sensor_msgs::PointCloud2> cloud_sub(nh, "input_cloud", 10);
 
     typedef sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::PointCloud2> MySyncPolicy;
 
     if (cam_model_flag == false)
     {
-        sub = nh.subscribe("/sensor/camera/blackfly/camera_info", 100, cameraInfoCallback);
+        sub = nh.subscribe("camera_info", 10, cameraInfoCallback);
     }
 
     Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), image_sub, cloud_sub);
     sync.registerCallback(boost::bind(&callback, _1, _2));
 
-    point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud_colored", 1, true);
+    point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("output_cloud", 10, true);
 
-    //ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2> ("/sensor/laser/fx8/point_cloud", 10, callback);
-
-    /* void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& info_msg)
-{
-
-    cam_model_.fromCameraInfo(info_msg);
-
-wait for cam info , only do it once
-
-    cv::Matx34d projection_matrix=cam_model_.fullProjectionMatrix();
-    cam_model_.project3dToPixel(cv::Point3d(-0.1392072,-0.02571392, 2.50376511) );
-//iterate over the point cloud
-}
-*/
-
-    //tf::poseTFToMsg(transform);
-    //ROS_INFO_STREAM("Hello, yall!");
     ros::spin();
 }

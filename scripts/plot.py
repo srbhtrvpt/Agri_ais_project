@@ -44,8 +44,9 @@ ax[1].set_ylabel("normalized_curvature")
 fig3.suptitle("raw values vs normalised")
 fig3.savefig(path + "curvature_boxplot.png", dpi=fig3.dpi)
 
-fig4, ax = plt.subplots()
 data = pd.DataFrame({'intensity':intensity_df['values'].tolist(), 'curvature':curvature_df['values'].tolist()}) 
+
+fig4, ax = plt.subplots()
 ax = data.boxplot(showmeans = True)
 ax.set_ylabel("value")
 fig4.suptitle("curvature vs intensity")
