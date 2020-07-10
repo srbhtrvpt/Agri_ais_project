@@ -1,7 +1,7 @@
 <launch>
     <arg name="latch" default = "true" />
     <arg name="pcd_file" default = "/home/srbh/agrirobo_proj/with_pcls/data/1535635817097713.pcd" />
-    <arg name="view_frame" default = "/odom" />
+    <arg name="view_frame" default = "/base_footprint" />
 
     <node pkg="pcl_ros" type="pcd_to_pointcloud" name="pcd_to_pointcloud" output="screen" args="$(arg pcd_file) _latch:=$(arg latch) _frame_id:=$(arg view_frame)" />
 </launch>

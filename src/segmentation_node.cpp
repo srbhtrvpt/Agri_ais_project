@@ -10,6 +10,7 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
+#include <pcl_ros/transforms.h>
 #include <ros/console.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -47,6 +48,8 @@ bool save_flag;
 double NormalDistanceWeight, DistanceThreshold;
 float curvature_threshold;
 std::string filepath;
+tf::TransformListener *listener;
+
 
 tf2::Quaternion set_orientation(pcl::ModelCoefficients::Ptr coeffs)
 {
@@ -221,6 +224,16 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
                 {
                     ROS_ERROR("%s: error writing value %.9f", __func__, cloud_in->points[i].intensity);
                 }
+                filename = filepath + std::to_string(cloud_in->header.stamp) + "_x.txt";
+                if (!write_to_file(filename, std::to_string(cloud_in->points[i].x)))
+                {
+                    ROS_ERROR("%s: error writing value %.9f", __func__, cloud_in->points[i].x);
+                }
+                filename = filepath + std::to_string(cloud_in->header.stamp) + "_y.txt";
+                if (!write_to_file(filename, std::to_string(cloud_in->points[i].y)))
+                {
+                    ROS_ERROR("%s: error writing value %.9f", __func__, cloud_in->points[i].y);
+                }
             }
 
             //normal marker
@@ -271,7 +284,16 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     cloud_out->header = cloud_in->header;
     if (save_flag)
     {
-        pcl::io::savePCDFile(filepath + std::to_string(cloud_out->header.stamp) + ".pcd", *cloud_out);
+        PointCloudNC::Ptr cloud_out1(new PointCloudNC);
+        try
+        {
+            pcl_ros::transformPointCloud("base_footprint", *cloud_out, *cloud_out1, *listener);
+            pcl::io::savePCDFile(filepath + std::to_string(cloud_out1->header.stamp) + ".pcd", *cloud_out1);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+        }     
     }
     point_cloud_pub2.publish(cloud_out);
 
