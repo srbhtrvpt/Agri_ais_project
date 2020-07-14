@@ -49,7 +49,7 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
     }
     catch (cv_bridge::Exception &ex)
     {
-        ROS_ERROR("[draw_frames] Failed to convert image");
+        ROS_ERROR("Failed to convert image");
     }
 
     pcl::fromROSMsg(*cloud, *cloud_in);
@@ -68,7 +68,6 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
     cloud_out->header.frame_id = image->header.frame_id;
     if (cam_model_flag == true)
     {
-
         for (it = cloud_out->points.begin(); it < cloud_out->points.end(); it++)
         {
             cv::Point3d pt_cv(it->x, it->y, it->z);
@@ -85,7 +84,6 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
             }
         }
     }
-
     cloud_colored->header = cloud_out->header;
     point_cloud_pub.publish(cloud_colored);
 }
