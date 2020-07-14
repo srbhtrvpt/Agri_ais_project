@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
         ROS_ERROR("%s adding to bag %.9f", __func__, pcl_msg->header.stamp.toSec());
         sensor_msgs::PointCloud2::Ptr integrated_pcl = pcl_integrator.integratedCloud(target_frame, crop_flag);
         boost::split(input_topic_split, pcl_topic, boost::is_any_of("/"), boost::token_compress_on);
-        output_bag.write(input_topic_split[0] + "/" + input_topic_split[1] + "/" + input_topic_split[2] + "/" + input_topic_split[3] + "/" + "integrated_" + input_topic_split[4], msg.getTime(), integrated_pcl);
+        output_bag.write(input_topic_split[0] + "/" + input_topic_split[1] + "/" + input_topic_split[2] + "/" + input_topic_split[3] + "/" + input_topic_split[4] + "/integrated_" + input_topic_split[5], msg.getTime(), integrated_pcl);
     }
     input_bag.close();
     output_bag.close();

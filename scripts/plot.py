@@ -17,7 +17,7 @@ y_df = pd.read_csv(path + "1535635817097713_y.txt", names= ["values"])
 normalized_intensity_df=(intensity_df-intensity_df.min())/(intensity_df.max()-intensity_df.min())
 normalized_curvature_df=(curvature_df-curvature_df.min())/(curvature_df.max()-curvature_df.min())
 
-
+'''
 fig1, ax = plt.subplots(1, 2)
 ax[0].scatter(intensity_df['values'], curvature_df['values'], s= 0.01**2)
 ax[0].set_xlabel("intensity")
@@ -26,23 +26,25 @@ ax[1].hexbin(intensity_df['values'], curvature_df['values'], norm = mcolors.Powe
 ax[1].set_xlabel("intensity")
 ax[1].set_ylabel("curvature")
 fig1.suptitle("intensity vs curvature")
-fig1.savefig(path + "int_vs_curv.png", dpi=400)
+fig1.savefig(path + "int_vs_curv.png", dpi=400) '''
 
 fig2 , ax = plt.subplots(1,2)
-ax[0].boxplot(intensity_df['values'], showmeans=True, meanline=True)
-ax[0].set_ylabel("intensity")
-ax[1].boxplot(normalized_intensity_df['values'], showmeans=True, meanline=True)
-ax[1].set_ylabel("normalised_intensity")
-fig2.suptitle("raw values vs normalised")
-fig2.savefig(path + "intensity_boxplot.png", dpi=fig2.dpi)
+ax[0].hist(intensity_df['values'], bins = 1000)
+ax[0].set_ylabel("count")
+ax[0].set_title("intensity")
+ax[1].hist(curvature_df['values'], bins = 1000)
+ax[1].set_title("curvature")
+fig2.savefig(path + "ivc_histograms.png", dpi=400)
 
+
+'''
 fig3 , ax = plt.subplots(1,2)
 ax[0].boxplot(curvature_df['values'], showmeans=True, meanline=True)
 ax[0].set_ylabel("curvature")
 ax[1].boxplot(normalized_curvature_df['values'], showmeans=True, meanline=True)
 ax[1].set_ylabel("normalized_curvature")
 fig3.suptitle("raw values vs normalised")
-fig3.savefig(path + "curvature_boxplot.png", dpi=fig3.dpi)
+fig3.savefig(path + "curvature_boxplot.png", dpi=400) '''
 
 data = pd.DataFrame({'intensity':intensity_df['values'].tolist(), 'curvature':curvature_df['values'].tolist()}) 
 
@@ -111,21 +113,16 @@ count_positions = hx2.get_offsets()
 
 binned_data = pd.DataFrame({'intensity':int_vals, 'curvature':curv_vals}) 
 
-fig10, ax = plt.subplots(2, 2)
-ax[0, 0].scatter(intensity_df['values'], curvature_df['values'], s= 0.01**2)
-ax[0, 0].set_xlabel("intensity")
-ax[0, 0].set_ylabel("curvature")
-ax[0, 1].hexbin(intensity_df['values'], curvature_df['values'], norm = mcolors.PowerNorm(0.3), cmap='inferno')
-ax[0,1].set_xlabel("intensity")
-ax[0,1].set_ylabel("curvature")
-ax[1,0].scatter(binned_data['intensity'], binned_data['curvature'], s= 0.01**2)
-ax[1,0].set_xlabel("intensity")
-ax[1,0].set_ylabel("curvature")
-ax[1,1].hexbin(binned_data['intensity'], binned_data['curvature'], norm = mcolors.PowerNorm(0.3), cmap='inferno')
-ax[1,1].set_xlabel("intensity")
-ax[1,1].set_ylabel("curvature")
+fig10, ax = plt.subplots(1, 2)
+ax[0].hexbin(intensity_df['values'], curvature_df['values'], norm = mcolors.PowerNorm(0.3), cmap='inferno')
+ax[0].set_xlabel("intensity")
+ax[0].set_ylabel("curvature")
+ax[0].set_title("raw")
+ax[1].hexbin(binned_data['intensity'], binned_data['curvature'], norm = mcolors.PowerNorm(0.3), cmap='inferno')
+ax[1].set_xlabel("intensity")
+ax[1].set_title("binned")
 fig10.suptitle("intensity vs curvature")
-fig10.savefig(path + "int_vs_curv_binned.png", dpi=800)
+fig10.savefig(path + "int_vs_curv_raw_binned_heatmap.png", dpi=400)
 
 fig11, ax = plt.subplots()
 gmm = GaussianMixture(n_components=3, covariance_type= 'full').fit(binned_data)
