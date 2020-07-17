@@ -4,7 +4,9 @@
 
         <remap from="input_cloud" to="/sensor/laser/fx8/point_cloud"/>
         <remap from="camera_info" to="/sensor/camera/blackfly/camera_info"/>
-        <remap from="input_image" to="/sensor/camera/blackfly/image_rect_color"/>
+        <!--remap from="input_image" to="/sensor/camera/blackfly/image_rect_color"/-->
+        <remap from="input_image" to="/sensor/camera/blackfly/image_raw"/>
+
         <remap from="output_cloud" to="/sensor/laser/fx8/point_cloud_colored"/>
     </node>
 </launch>

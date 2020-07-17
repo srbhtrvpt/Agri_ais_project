@@ -3,9 +3,9 @@
 <group ns="sensor">
 <group ns="camera">
 <group ns="blackfly">
-       <node pkg="nodelet" type="nodelet" name="camera_nodelet_manager" args="manager" output="screen">
+       <!--node pkg="nodelet" type="nodelet" name="camera_nodelet_manager" args="manager" output="screen">
              <rosparam command="load" file="$(find pointgrey_camera_driver)/config/blackfly.yaml" />
-       </node>
+       </node -->
 
        <node pkg="nodelet" type="nodelet" name="image_proc_debayer"
              args="load image_proc/debayer camera_nodelet_manager">
