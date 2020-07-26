@@ -1,3 +1,4 @@
+#define PCL_NO_PRECOMPILE
 #include <pcl/ModelCoefficients.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/filters/extract_indices.h>
@@ -5,17 +6,15 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/pcl_config.h>
 #include <pcl/point_types.h>
+#include <pcl_ros/point_cloud.h>
+#include <pcl/pcl_macros.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
-#include <ros/console.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/PointField.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
 #include <visualization_msgs/Marker.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <std_msgs/Header.h>
@@ -24,11 +23,41 @@
 #include <fstream>
 #include <string>
 
+
+struct XYZIRGBNormal
+{
+    PCL_ADD_POINT4D;
+    PCL_ADD_RGB;
+    PCL_ADD_NORMAL4D;
+    float curvature;
+    PCL_ADD_INTENSITY;               
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // make sure our new allocators are aligned
+} EIGEN_ALIGN16;                    // enforce SSE padding for correct memory alignment
+
+POINT_CLOUD_REGISTER_POINT_STRUCT (XYZIRGBNormal,           // here we assume a XYZ (as fields)
+                                   (float, x, x)
+                                   (float, y, y)
+                                   (float, z, z)
+                                   (uint32_t, rgb, rgb)
+                                   (float, normal_x, normal_x)
+                                   (float, normal_y, normal_y)
+                                   (float, normal_z, normal_z)
+                                   (float, curvature, curvature)
+                                    (float, intensity , intensity)
+
+
+)
+
 ros::Publisher point_cloud_pub, point_cloud_pub1, point_cloud_pub2, vis_marker_pub, vis_marker_pub1;
 
 typedef pcl::PointXYZI PointT;
 typedef pcl::PointXYZINormal PointNCT;
 typedef pcl::Normal PointNT;
+
+typedef pcl::PointXYZRGB PointC;
+typedef pcl::PointCloud<PointC> ColoredPointCloud;
+typedef pcl::PointCloud<XYZIRGBNormal> PointCloudT;
+
 typedef pcl::PointCloud<PointT> PointCloud;
 typedef pcl::PointCloud<PointNT> PointCloudN;
 typedef pcl::PointCloud<PointNCT> PointCloudNC;
@@ -178,18 +207,21 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
 {
 
     PointCloud::Ptr cloud_in(new PointCloud), cloud_inliers(new PointCloud), cloud_outliers(new PointCloud);
+    ColoredPointCloud::Ptr cloud_in_c(new ColoredPointCloud);
     PointCloudN::Ptr cloud_normals(new PointCloudN);
-    PointCloudNC::Ptr cloud_out(new PointCloudNC);
+    // PointCloudNC::Ptr cloud_out(new PointCloudNC), cloud_out1(new PointCloudNC);
+    PointCloudT::Ptr cloud_out(new PointCloudT);
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
     pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
-    PointNCT point;
+    // PointNCT point;
+    XYZIRGBNormal point;
     std_msgs::ColorRGBA color;
     geometry_msgs::Point p;
     int counter = 0;
     float curv_avg = 0.f;
     std::string filename;
     visualization_msgs::Marker normal_marker = init_normal_marker(), plane_marker;
-
+    pcl::fromROSMsg(*cloud_ros, *cloud_in_c);
     pcl::fromROSMsg(*cloud_ros, *cloud_in);
     std::vector<int> map;
     cloud_in->is_dense = false;
@@ -207,7 +239,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     for (int i = 0; i < cloud_normals->points.size(); i++)
     {
         if (isfinite(cloud_in->points[i].x) && isfinite(cloud_in->points[i].y) && isfinite(cloud_in->points[i].z) && isfinite(cloud_in->points[i].intensity) &&
-            isfinite(cloud_normals->points[i].normal_z) && isfinite(cloud_normals->points[i].normal_y) &&
+            isfinite(cloud_normals->points[i].normal_z) && isfinite(cloud_normals->points[i].normal_y) && isfinite(cloud_in_c->points[i].rgb) &&
             isfinite(cloud_normals->points[i].normal_x) && isfinite(cloud_normals->points[i].curvature))
         {
             counter++;
@@ -269,6 +301,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
             point.normal_z = cloud_normals->points[i].normal_z;
             point.intensity = cloud_in->points[i].intensity;
             point.curvature = cloud_normals->points[i].curvature;
+            point.rgb = cloud_in_c->points[i].rgb;
             cloud_out->push_back(point);
         }
     }
@@ -284,11 +317,12 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     cloud_out->header = cloud_in->header;
     if (save_flag)
     {
-        PointCloudNC::Ptr cloud_out1(new PointCloudNC);
+        sensor_msgs::PointCloud2::Ptr cloud_out1;
+        pcl::toROSMsg(*cloud_out, *cloud_out1);
         try
         {
-            pcl_ros::transformPointCloud("base_footprint", *cloud_out, *cloud_out1, *listener);
-            pcl::io::savePCDFile(filepath + std::to_string(cloud_out1->header.stamp) + ".pcd", *cloud_out1);
+            pcl_ros::transformPointCloud("base_footprint", *cloud_out1, *cloud_out1, *listener);
+            pcl::io::savePCDFile(filepath + std::to_string(cloud_out->header.stamp) + ".pcd", *cloud_out1);
         }
         catch(const std::exception& e)
         {

@@ -23,15 +23,13 @@ image_geometry::PinholeCameraModel cam_model_;
 ros::Subscriber sub;
 bool cam_model_flag = false;
 
-typedef pcl::PointXYZ PointT;
+typedef pcl::PointXYZI PointT;
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<PointC> ColoredPointCloud;
 typedef pcl::PointCloud<PointT> PointCloud;
 
 void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointCloud2ConstPtr &cloud)
 {
-
-    PointCloud::Ptr cloud_out(new PointCloud);
     PointCloud::Ptr cloud_in(new PointCloud);
     ColoredPointCloud::Ptr cloud_colored(new ColoredPointCloud);
     PointCloud::iterator it;
@@ -53,22 +51,24 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
     }
 
     pcl::fromROSMsg(*cloud, *cloud_in);
+    cloud_in<
 
     try
     {
-        listener.waitForTransform(image->header.frame_id, cloud->header.frame_id, ros::Time(0), ros::Duration(10.0));
-        listener.lookupTransform(image->header.frame_id, cloud->header.frame_id, ros::Time(0), transform);
+        // listener.waitForTransform(image->header.frame_id, cloud->header.frame_id, cloud->header.stamp, ros::Duration(2.0));
+        // listener.lookupTransform(image->header.frame_id, cloud->header.frame_id, cloud->header.stamp, transform);
+        pcl_ros::transformPointCloud(image->header.frame_id,*cloud_in, *cloud_in, listener);
     }
     catch (tf::TransformException ex)
     {
         ROS_ERROR("%s", ex.what());
     }
 
-    pcl_ros::transformPointCloud(*cloud_in, *cloud_out, transform);
-    cloud_out->header.frame_id = image->header.frame_id;
+    
+    // cloud_in->header.frame_id = image->header.frame_id;
     if (cam_model_flag == true)
     {
-        for (it = cloud_out->points.begin(); it < cloud_out->points.end(); it++)
+        for (it = cloud_in->points.begin(); it < cloud_in->points.end(); it++)
         {
             cv::Point3d pt_cv(it->x, it->y, it->z);
             uv = cam_model_.project3dToPixel(pt_cv);
@@ -84,7 +84,20 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
             }
         }
     }
-    cloud_colored->header = cloud_out->header;
+
+    // try
+    // {
+    //     // listener.waitForTransform(cloud->header.frame_id,image->header.frame_id,cloud->header.stamp, ros::Duration(1.0));
+    //     // listener.lookupTransform(cloud->header.frame_id,image->header.frame_id, cloud->header.stamp, transform);
+
+    //     pcl_ros::transformPointCloud(cloud->header.frame_id,*cloud_colored, *cloud_colored, listener);
+    // }
+    // catch (tf::TransformException ex)
+    // {
+    //     ROS_ERROR("%s", ex.what());
+    // }
+    
+    cloud_colored->header = cloud_in->header;
     point_cloud_pub.publish(cloud_colored);
 }
 

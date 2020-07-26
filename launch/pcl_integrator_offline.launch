@@ -1,6 +1,7 @@
 <launch>
    <arg name="fixed_frame" default = "odom" />
-   <arg name="base_footprint" default = "base_footprint" />
+   <arg name="crop_frame" default = "base_footprint" />
+   <arg name="target_frame" default = "base_sensor_vlp16_front_laser_optical_link" />
    <arg name="input_bag" default = "/home/srbh/agrirobo_proj/with_pcls/largeplants.bag" />
    <arg name="topic" default = "/sensor/laser/vlp16/front/pointcloud_xyzi" />
    <arg name="crop" default = "true" />
@@ -10,5 +11,5 @@
    <arg name="x_offset" default = "1." />
    <arg name="y_offset" default = "0." />
 
-   <node pkg="myproject1" type="pcl_integrator_node_offline" name="pcl_integrator_node_offline" output="screen" args="-f $(arg fixed_frame) -b $(arg base_footprint) -i $(arg input_bag) -t $(arg topic) -c $(arg crop) -m $(arg max_buffer_size) -x $(arg x) -y $(arg y) -w $(arg x_offset) -z $(arg y_offset)"/>
+   <node pkg="myproject1" type="pcl_integrator_node_offline" name="pcl_integrator_node_offline" output="screen" args="-f $(arg fixed_frame) -r $(arg target_frame) -b $(arg crop_frame) -i $(arg input_bag) -t $(arg topic) -c $(arg crop) -m $(arg max_buffer_size) -x $(arg x) -y $(arg y) -w $(arg x_offset) -z $(arg y_offset)"/>
 </launch>

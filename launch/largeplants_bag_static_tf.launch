@@ -3,6 +3,10 @@
 
     <node pkg="rosbag" type="play" name="largeplants_player" output="screen" args="--clock -l /home/srbh/agrirobo_proj/with_pcls/largeplants.bag /tf:=/tf_null"/>
 
-    <node pkg="tf" type="static_transform_publisher" name="tf_broadcaster" args="0.04768920 0.2435660 0.1190300 1.5675325611 0.01022335336 1.5721716462 base_sensor_fx8_laser_optical_link base_sensor_blackfly_optical_link 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="tf_broadcaster" args="0.04768920 0.2435660 0.1190300 1.5675325611 0.01022335336 1.5721716462 base_sensor_vlp16_front_laser_optical_link base_sensor_blackfly_optical_link 100"/>
+
+    <node name="republish" type="republish" pkg="image_transport" output="screen" args="compressed in:=/sensor/camera/blackfly/image_raw raw out:=/sensor/camera/blackfly/image_raw" />
+
+    <node name="image_proc" pkg="image_proc" type="image_proc" ns="/sensor/camera/blackfly/"/>
 
 </launch>
