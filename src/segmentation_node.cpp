@@ -24,7 +24,7 @@
 #include <string>
 
 
-struct XYZIRGBNormal
+struct PointXYZIRGBNormal
 {
     PCL_ADD_POINT4D;
     PCL_ADD_RGB;
@@ -34,7 +34,7 @@ struct XYZIRGBNormal
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // make sure our new allocators are aligned
 } EIGEN_ALIGN16;                    // enforce SSE padding for correct memory alignment
 
-POINT_CLOUD_REGISTER_POINT_STRUCT (XYZIRGBNormal,           // here we assume a XYZ (as fields)
+POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIRGBNormal,           // here we assume a XYZ (as fields)
                                    (float, x, x)
                                    (float, y, y)
                                    (float, z, z)
@@ -56,7 +56,7 @@ typedef pcl::Normal PointNT;
 
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<PointC> ColoredPointCloud;
-typedef pcl::PointCloud<XYZIRGBNormal> PointCloudT;
+typedef pcl::PointCloud<PointXYZIRGBNormal> PointCloudT;
 
 typedef pcl::PointCloud<PointT> PointCloud;
 typedef pcl::PointCloud<PointNT> PointCloudN;
@@ -214,7 +214,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros)
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
     pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
     // PointNCT point;
-    XYZIRGBNormal point;
+    PointXYZIRGBNormal point;
     std_msgs::ColorRGBA color;
     geometry_msgs::Point p;
     int counter = 0;

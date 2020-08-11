@@ -1,8 +1,10 @@
+#define PCL_NO_PRECOMPILE
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
+#include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/LaserScan.h>
@@ -17,16 +19,47 @@
 #include <sensor_msgs/image_encodings.h>
 #include <ros/console.h>
 
+struct PointXYZIRGB
+{
+    PCL_ADD_POINT4D;
+    PCL_ADD_RGB;
+    PCL_ADD_INTENSITY;               
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // make sure our new allocators are aligned
+} EIGEN_ALIGN16;                    // enforce SSE padding for correct memory alignment
+
+POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIRGB,           // here we assume a XYZ (as fields)
+                                   (float, x, x)
+                                   (float, y, y)
+                                   (float, z, z)
+                                   (uint32_t, rgb, rgb)
+                                    (float, intensity , intensity)
+)
+
 using namespace message_filters;
 ros::Publisher point_cloud_pub;
 image_geometry::PinholeCameraModel cam_model_;
 ros::Subscriber sub;
-bool cam_model_flag = false;
 
 typedef pcl::PointXYZI PointT;
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<PointC> ColoredPointCloud;
+
+// typedef pcl::PointCloud<PointXYZIRGB> ColoredPointCloud;
 typedef pcl::PointCloud<PointT> PointCloud;
+
+bool setCameraInfo(const sensor_msgs::CameraInfoConstPtr &cam_info_msg)
+{
+    try
+    {
+        cam_model_.fromCameraInfo(cam_info_msg);
+        return true;
+    }
+    catch (image_geometry::Exception ex)
+    {
+        ROS_ERROR("%s", ex.what());
+        return false;
+    }
+}
 
 void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointCloud2ConstPtr &cloud)
 {
@@ -34,11 +67,13 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
     ColoredPointCloud::Ptr cloud_colored(new ColoredPointCloud);
     PointCloud::iterator it;
     PointC color_pt;
+    // PointXYZIRGB color_pt;
     tf::TransformListener listener;
+    tf::StampedTransform transform;
     cv::Point2d uv;
     cv::Mat image_in;
     cv_bridge::CvImagePtr input_bridge;
-    tf::StampedTransform transform;
+    
 
     try
     {
@@ -49,24 +84,20 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
     {
         ROS_ERROR("Failed to convert image");
     }
-
     pcl::fromROSMsg(*cloud, *cloud_in);
-    cloud_in<
 
     try
     {
-        // listener.waitForTransform(image->header.frame_id, cloud->header.frame_id, cloud->header.stamp, ros::Duration(2.0));
-        // listener.lookupTransform(image->header.frame_id, cloud->header.frame_id, cloud->header.stamp, transform);
-        pcl_ros::transformPointCloud(image->header.frame_id,*cloud_in, *cloud_in, listener);
+        listener.waitForTransform(image->header.frame_id, cloud->header.frame_id, ros::Time(0), ros::Duration(5.0));
+        listener.lookupTransform(image->header.frame_id, cloud->header.frame_id, ros::Time(0), transform);
+        pcl_ros::transformPointCloud(*cloud_in, *cloud_in, transform);
     }
     catch (tf::TransformException ex)
     {
         ROS_ERROR("%s", ex.what());
     }
 
-    
-    // cloud_in->header.frame_id = image->header.frame_id;
-    if (cam_model_flag == true)
+    if (setCameraInfo(ros::topic::waitForMessage<sensor_msgs::CameraInfo>("camera_info", ros::Duration(1.0))))
     {
         for (it = cloud_in->points.begin(); it < cloud_in->points.end(); it++)
         {
@@ -80,32 +111,32 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
                 color_pt.z = it->z;
                 uint32_t rgb = (uint32_t)pix->z << 16 | (uint32_t)pix->y << 8 | (uint32_t)pix->x;
                 color_pt.rgb = *(float *)(&rgb);
+                // color_pt.intensity = it->intensity;
+                // cloud_colored.push_back(color_pt);
                 cloud_colored->push_back(color_pt);
+
             }
         }
     }
+    // sensor_msgs::PointCloud2::Ptr cloud_out;
+    // pcl::toROSMsg(cloud_colored, *cloud_out);
+    // Eigen::Matrix4f tf1;
+    // pcl_ros::transformAsMatrix(transform.inverse(), tf1);
+    try
+    {
+        // pcl_ros::transformPointCloud(tf1,*cloud_out, *cloud_out);
+        pcl_ros::transformPointCloud(*cloud_colored, *cloud_colored, transform.inverse());
 
-    // try
-    // {
-    //     // listener.waitForTransform(cloud->header.frame_id,image->header.frame_id,cloud->header.stamp, ros::Duration(1.0));
-    //     // listener.lookupTransform(cloud->header.frame_id,image->header.frame_id, cloud->header.stamp, transform);
+    }
+    catch (tf::TransformException ex)
+    {
+        ROS_ERROR("%s", ex.what());
+    }
+    // cloud_out->header = cloud->header;
+    // point_cloud_pub.publish(cloud_out);
 
-    //     pcl_ros::transformPointCloud(cloud->header.frame_id,*cloud_colored, *cloud_colored, listener);
-    // }
-    // catch (tf::TransformException ex)
-    // {
-    //     ROS_ERROR("%s", ex.what());
-    // }
-    
     cloud_colored->header = cloud_in->header;
     point_cloud_pub.publish(cloud_colored);
-}
-
-void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &info_msg)
-{
-
-    cam_model_.fromCameraInfo(info_msg);
-    cam_model_flag = true;
 }
 
 int main(int argc, char *argv[])
@@ -118,12 +149,7 @@ int main(int argc, char *argv[])
 
     typedef sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::PointCloud2> MySyncPolicy;
 
-    if (cam_model_flag == false)
-    {
-        sub = nh.subscribe("camera_info", 10, cameraInfoCallback);
-    }
-
-    Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), image_sub, cloud_sub);
+    Synchronizer<MySyncPolicy> sync(MySyncPolicy(5), image_sub, cloud_sub);
     sync.registerCallback(boost::bind(&callback, _1, _2));
 
     point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("output_cloud", 10, true);

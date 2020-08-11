@@ -5,11 +5,21 @@ from matplotlib import cm as CM
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
+from scipy import stats
 import glob
+import bisect
 
 
 path = "../data/"
 
+def get_idx(h, n):
+    idx = bisect.bisect(h, n)
+    if 0 < idx < len(h):
+        return idx-1
+    elif idx == len(h):
+        return idx-2
+    else:
+        raise ValueError(n, " is out of bounds of ", h)
 
 def load_ivc(single_file):
     global path
@@ -84,12 +94,36 @@ def plot(xy_plot):
     fig1.savefig(path + "ivc.png", dpi=400)
 
     fig2, ax = plt.subplots(1, 2)
-    ax[0].hist(intensity_df["values"], bins=500)
+    n1, bins1, patch1 = ax[0].hist(intensity_df["values"], bins=500)
     ax[0].set_ylabel("count")
     ax[0].set_title("intensity")
-    ax[1].hist(curvature_df["values"], bins=500)
+    n2, bins2, patch2 = ax[1].hist(curvature_df["values"], bins=50)
     ax[1].set_title("curvature")
     fig2.savefig(path + "intensity_curvature_histograms.png", dpi=400)
+
+    z_int = np.abs(stats.zscore(intensity_df))
+    z_curv = np.abs(stats.zscore(curvature_df))  # z scores for outliers
+
+    z_count = np.abs(stats.zscore(n1))
+    z_count2 = np.abs(stats.zscore(n2))
+    # print(z_count2[(z_count2 > 2)])
+    print("no. outliers intensity: ", n1[np.where(z_count > 5)[0]][0])
+    print("no. outliers curvature: ", n2[np.where(z_count2 > 2)[0]][0])
+
+    # int_outliers = intensity_df.loc[(intensity_df["values"] > bins1[np.where(z_count > 5)[0]][0]) & (intensity_df["values"] < bins1[np.where(z_count > 5)[0] +1][0])]
+    mask = (intensity_df["values"] > bins1[np.where(z_count > 5)[0]][0]) & (intensity_df["values"] < bins1[np.where(z_count > 5)[0] +1][0])
+    labels_outlier_intensity = [0 if mask[i] == True else 1 for i in range(mask.size)]
+    # print(len(label_outlier))
+    # print(mask)
+
+    mask2 = (curvature_df["values"] > bins2[np.where(z_count2 > 2)[0]][0]) & (curvature_df["values"] < bins2[np.where(z_count2 > 2)[0] +1][0])
+    labels_outlier_curvature = [0 if mask2[i] == True else 1 for i in range(mask2.size)]
+    # print(np.where(z_count > 5))
+
+    z_val_int = [z_count[get_idx(bins1, r["values"])] for i,r in intensity_df.iterrows()]
+    z_val_curv = [z_count2[get_idx(bins2, r["values"])] for i,r in curvature_df.iterrows()]
+
+    
 
     """fig3 , ax = plt.subplots(1,2)
     ax[0].boxplot(curvature_df['values'], showmeans=True, meanline=True)
@@ -216,6 +250,68 @@ def plot(xy_plot):
         fig10.colorbar(sc, ax=ax, label="labels")
         fig10.suptitle("gmm segmentation")
         fig10.savefig(path + "gmm_%d_segmentation.png" % (n_classes), dpi=400)
+
+
+        fig11, ax = plt.subplots()
+        sc = ax.scatter(
+            x_df["values"],
+            y_df["values"],
+            c=labels_outlier_intensity,
+            cmap=CM.jet,
+            s=0.5 ** 2,
+            marker="H",
+        )
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        fig11.colorbar(sc, ax=ax, label="labels")
+        fig11.suptitle("outliers_intensity")
+        fig11.savefig(path + "outliers_intensity.png", dpi=400)
+
+        fig12, ax = plt.subplots()
+        sc = ax.scatter(
+            x_df["values"],
+            y_df["values"],
+            c=labels_outlier_curvature,
+            cmap=CM.jet,
+            s=0.5 ** 2,
+            marker="H",
+        )
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        fig12.colorbar(sc, ax=ax, label="labels")
+        fig12.suptitle("outliers_curvature")
+        fig12.savefig(path + "outliers_curvature.png", dpi=400)
+
+
+        fig13, ax = plt.subplots()
+        hx2 = ax.hexbin(
+            x_df["values"],
+            y_df["values"],
+            C=z_val_int,
+            cmap="inferno",
+            gridsize=(160, 120),
+            norm=mcolors.PowerNorm(0.5),
+        )
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        fig13.colorbar(hx2, ax=ax, label="intensity z count")
+        fig13.suptitle("x-y intensity z count heatmap")
+        fig13.savefig(path + "x_y_int_z.png", dpi=400)
+
+        fig14, ax = plt.subplots()
+        hx2 = ax.hexbin(
+            x_df["values"],
+            y_df["values"],
+            C=z_val_curv,
+            cmap="inferno",
+            gridsize=(160, 120),
+        )
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        fig14.colorbar(hx1, ax=ax, label="curvature z count")
+        fig14.suptitle("x-y curvature z count heatmap")
+        fig14.savefig(path + "x_y_curv_z.png", dpi=400)
+
 
 
 """
