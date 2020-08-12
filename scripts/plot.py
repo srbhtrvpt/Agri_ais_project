@@ -264,7 +264,7 @@ def plot(xy_plot):
         ax.set_xlabel("x")
         ax.set_ylabel("y")
         fig11.colorbar(sc, ax=ax, label="labels")
-        fig11.suptitle("outliers_intensity")
+        fig11.suptitle("outliers intensity")
         fig11.savefig(path + "outliers_intensity.png", dpi=400)
 
         fig12, ax = plt.subplots()
@@ -279,7 +279,7 @@ def plot(xy_plot):
         ax.set_xlabel("x")
         ax.set_ylabel("y")
         fig12.colorbar(sc, ax=ax, label="labels")
-        fig12.suptitle("outliers_curvature")
+        fig12.suptitle("outliers curvature")
         fig12.savefig(path + "outliers_curvature.png", dpi=400)
 
 
@@ -290,12 +290,12 @@ def plot(xy_plot):
             C=z_val_int,
             cmap="inferno",
             gridsize=(160, 120),
-            norm=mcolors.PowerNorm(0.5),
+            # norm=mcolors.PowerNorm(0.5),
         )
         ax.set_xlabel("x")
         ax.set_ylabel("y")
-        fig13.colorbar(hx2, ax=ax, label="intensity z count")
-        fig13.suptitle("x-y intensity z count heatmap")
+        fig13.colorbar(hx2, ax=ax, label="z score")
+        fig13.suptitle("x-y intensity z score heatmap")
         fig13.savefig(path + "x_y_int_z.png", dpi=400)
 
         fig14, ax = plt.subplots()
@@ -305,15 +305,13 @@ def plot(xy_plot):
             C=z_val_curv,
             cmap="inferno",
             gridsize=(160, 120),
+            # norm=mcolors.PowerNorm(0.3)
         )
         ax.set_xlabel("x")
         ax.set_ylabel("y")
-        fig14.colorbar(hx1, ax=ax, label="curvature z count")
-        fig14.suptitle("x-y curvature z count heatmap")
+        fig14.colorbar(hx1, ax=ax, label="z score")
+        fig14.suptitle("x-y curvature z score heatmap")
         fig14.savefig(path + "x_y_curv_z.png", dpi=400)
-
-
-
 """
    fig10, ax = plt.subplots(1, 2)
     ax[0].hexbin(
