@@ -18,6 +18,9 @@
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 #include <ros/console.h>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.h> // tf2::doTransform for PointCloud2
+#include <geometry_msgs/TransformStamped.h>
+
 
 struct PointXYZIRGB
 {
@@ -42,9 +45,9 @@ ros::Subscriber sub;
 
 typedef pcl::PointXYZI PointT;
 typedef pcl::PointXYZRGB PointC;
-typedef pcl::PointCloud<PointC> ColoredPointCloud;
+// typedef pcl::PointCloud<PointC> ColoredPointCloud;
 
-// typedef pcl::PointCloud<PointXYZIRGB> ColoredPointCloud;
+typedef pcl::PointCloud<PointXYZIRGB> ColoredPointCloud;
 typedef pcl::PointCloud<PointT> PointCloud;
 
 bool setCameraInfo(const sensor_msgs::CameraInfoConstPtr &cam_info_msg)
@@ -66,13 +69,15 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
     PointCloud::Ptr cloud_in(new PointCloud);
     ColoredPointCloud::Ptr cloud_colored(new ColoredPointCloud);
     PointCloud::iterator it;
-    PointC color_pt;
-    // PointXYZIRGB color_pt;
+    // PointC color_pt;
+    PointXYZIRGB color_pt; 
     tf::TransformListener listener;
     tf::StampedTransform transform;
     cv::Point2d uv;
     cv::Mat image_in;
     cv_bridge::CvImagePtr input_bridge;
+    tf2_ros::Buffer tf_buffer;
+    tf2_ros::TransformListener tf_listener(tf_buffer); 
     
 
     try
@@ -111,21 +116,17 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
                 color_pt.z = it->z;
                 uint32_t rgb = (uint32_t)pix->z << 16 | (uint32_t)pix->y << 8 | (uint32_t)pix->x;
                 color_pt.rgb = *(float *)(&rgb);
-                // color_pt.intensity = it->intensity;
+                color_pt.intensity = it->intensity;
                 // cloud_colored.push_back(color_pt);
                 cloud_colored->push_back(color_pt);
 
             }
         }
     }
-    // sensor_msgs::PointCloud2::Ptr cloud_out;
-    // pcl::toROSMsg(cloud_colored, *cloud_out);
-    // Eigen::Matrix4f tf1;
-    // pcl_ros::transformAsMatrix(transform.inverse(), tf1);
     try
     {
-        // pcl_ros::transformPointCloud(tf1,*cloud_out, *cloud_out);
-        pcl_ros::transformPointCloud(*cloud_colored, *cloud_colored, transform.inverse());
+        // pcl_ros::transformPointCloud(*cloud_colored, *cloud_colored, transform.inverse());
+
 
     }
     catch (tf::TransformException ex)
@@ -149,7 +150,7 @@ int main(int argc, char *argv[])
 
     typedef sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::PointCloud2> MySyncPolicy;
 
-    Synchronizer<MySyncPolicy> sync(MySyncPolicy(5), image_sub, cloud_sub);
+    Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), image_sub, cloud_sub);
     sync.registerCallback(boost::bind(&callback, _1, _2));
 
     point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("output_cloud", 10, true);

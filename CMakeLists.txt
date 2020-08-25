@@ -101,3 +101,5 @@ target_link_libraries(pcl_integrator_node_offline
 add_executable(segmentation_node src/segmentation_node.cpp)
 target_link_libraries(segmentation_node  ${catkin_LIBRARIES})# ${PCL_LIBRARIES})
 
+add_executable(test_node src/test.cpp)
+target_link_libraries(test_node  ${catkin_LIBRARIES})# ${PCL_LIBRARIES})
