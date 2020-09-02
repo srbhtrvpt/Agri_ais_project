@@ -214,7 +214,7 @@ def plot(xy_plot):
         )
         ax.set_xlabel("x")
         ax.set_ylabel("y")
-        fig9.colorbar(hx2, ax=ax, label="intensity")
+        fig9.colorbar(hx2, ax=ax, label="count")
         fig9.suptitle("x-y count heatmap")
         fig9.savefig(path + "x_y_count.png", dpi=400)
         count_vals = hx2.get_array()

@@ -98,7 +98,7 @@ sensor_msgs::PointCloud2::Ptr PclIntegrator::colorisedCloud(const sensor_msgs::I
                 color_pt.z = it->z;
                 uint32_t rgb = (uint32_t)pix->z << 16 | (uint32_t)pix->y << 8 | (uint32_t)pix->x;
                 color_pt.rgb = *(float *)(&rgb);
-                color_pt.intensity = it->intensity;
+                // color_pt.intensity = it->intensity;
                 // cloud_colored.push_back(color_pt);
                 cloud_colored->push_back(color_pt);
 
