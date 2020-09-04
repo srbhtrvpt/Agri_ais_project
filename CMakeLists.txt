@@ -70,6 +70,11 @@ target_link_libraries(pcl_integrator_lib
   ${catkin_LIBRARIES}
   )
 
+add_library(pcl_coloriser_lib
+   src/pcl_coloriser.cpp
+)
+target_link_libraries(pcl_coloriser_lib ${catkin_LIBRARIES})# ${OpenCV_LIBS})
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
@@ -81,6 +86,10 @@ target_link_libraries(pcl_integrator_lib
 
 add_executable(pcl_colored_node src/pcl_colored_node.cpp)
 target_link_libraries(pcl_colored_node ${catkin_LIBRARIES})# ${OpenCV_LIBS})
+
+add_executable(pcl_coloriser_node src/pcl_coloriser_node.cpp)
+target_link_libraries(pcl_coloriser_node ${catkin_LIBRARIES}
+  pcl_coloriser_lib)
 
 add_executable(pcl_integrator_node
   src/pcl_integrator_node.cpp
