@@ -148,7 +148,8 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
             float green = cloud_colored->points[i].g;
             float blue = cloud_colored->points[i].b;
             float TGI = -0.5*(190*(red - green) - 120*(red - blue));
-            if (!write_to_file(filename, std::to_string(cloud_colored->points[i].x) + "\t" + std::to_string(cloud_colored->points[i].y) + "\t" + std::to_string(cloud_colored->points[i].z) + "\t" + std::to_string(cloud_colored->points[i].rgba) + "\t" + std::to_string(TGI)))
+            float VARI = (green - red) / (green + red - blue);
+            if (!write_to_file(filename, std::to_string(cloud_colored->points[i].x) + "\t" + std::to_string(cloud_colored->points[i].y) + "\t" + std::to_string(cloud_colored->points[i].z) + "\t" + std::to_string(VARI) + "\t" + std::to_string(TGI)))
             {
                 ROS_ERROR("%s: error writing value ", __func__);
             }

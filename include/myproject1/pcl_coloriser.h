@@ -13,8 +13,8 @@ class PclColoriser
 {
 public:
 
-    PclColoriser(sensor_msgs::CameraInfo cam_info_msg, tf2_ros::Buffer *tf_buffer);
-    
+    PclColoriser( tf2_ros::Buffer *tf_buffer);
+    bool setCameraInfo(sensor_msgs::CameraInfo cam_info_msg);
     sensor_msgs::PointCloud2::Ptr colorisedCloud(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointCloud2ConstPtr &pcl_msg) const;
 
 protected:

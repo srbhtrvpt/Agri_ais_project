@@ -8,19 +8,28 @@
 #include <opencv/cv.h>
 #include <cv_bridge/cv_bridge.h>
 
+#include <pcl_ros/point_cloud.h>
+#include <pcl_ros/transforms.h>
+#include <pcl_conversions/pcl_conversions.h>
 
-PclColoriser::PclColoriser(sensor_msgs::CameraInfo cam_info_msg, tf2_ros::Buffer *tf_buffer): cam_info_msg_(cam_info_msg),tf_buffer_(tf_buffer){
-    try
-    {
-        cam_model_.fromCameraInfo(cam_info_msg_);
-        cam_info_flag = true;
-    }
-    catch (image_geometry::Exception ex)
-    {
-        ROS_ERROR("%s", ex.what());
-        cam_info_flag = false;
-    }
+
+PclColoriser::PclColoriser(tf2_ros::Buffer *tf_buffer): tf_buffer_(tf_buffer){
 }
+
+bool PclColoriser::setCameraInfo(sensor_msgs::CameraInfo cam_info_msg){
+//     try
+//     {
+//         cam_model_.fromCameraInfo(cam_info_msg);
+//         return true;
+//     }
+//     catch (image_geometry::Exception ex)
+//     {
+//         ROS_ERROR("%s", ex.what());
+//         return false;
+//     }
+    return cam_model_.fromCameraInfo(cam_info_msg);
+
+ }
 
 sensor_msgs::PointCloud2::Ptr PclColoriser::colorisedCloud(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointCloud2ConstPtr &pcl_msg_orig) const
 {
@@ -57,7 +66,7 @@ sensor_msgs::PointCloud2::Ptr PclColoriser::colorisedCloud(const sensor_msgs::Im
     sensor_msgs::PointCloud2Iterator<float> it_int(*pcl_msg, "intensity");
 
     // cloud_colored->width  = pcl_msg->width;
-    cloud_colored->height = 1;
+    // cloud_colored->height = 1;
     cloud_colored->is_bigendian = false;
     cloud_colored->is_dense = false;
     sensor_msgs::PointCloud2Modifier modifier(*cloud_colored);
@@ -67,7 +76,7 @@ sensor_msgs::PointCloud2::Ptr PclColoriser::colorisedCloud(const sensor_msgs::Im
                                         "intensity", 1, sensor_msgs::PointField::FLOAT32,
                                         "tgi", 1, sensor_msgs::PointField::FLOAT32,
                                         "rgb", 1, sensor_msgs::PointField::FLOAT32);
-    // modifier.resize(pcl_msg->width);
+    modifier.resize(pcl_msg->width);
     sensor_msgs::PointCloud2Iterator<float> out_x(*cloud_colored, "x");
     sensor_msgs::PointCloud2Iterator<float> out_y(*cloud_colored, "y");
     sensor_msgs::PointCloud2Iterator<float> out_z(*cloud_colored, "z");
@@ -75,54 +84,43 @@ sensor_msgs::PointCloud2::Ptr PclColoriser::colorisedCloud(const sensor_msgs::Im
     sensor_msgs::PointCloud2Iterator<float> out_rgb(*cloud_colored, "rgb");
     sensor_msgs::PointCloud2Iterator<float> out_tgi(*cloud_colored, "tgi");
 
-
-
     int numpoints = 0;
-    if (cam_info_flag)
-    {
-        while (it_x != it_x.end())
+    double x,y,z;
+    while (it_x != it_x.end())
+    {   
+        x = *it_x;
+        y = *it_y;
+        z = *it_z;
+        cv::Point3d pt_cv(x, y, z);
+        uv = cam_model_.project3dToPixel(pt_cv);
+        if (uv.x > 0 && uv.x < image_in.cols && uv.y < image_in.rows && uv.y > 0)
         {
-            cv::Point3d pt_cv(*it_x, *it_y, *it_y);
-            try
-            {
-                uv = cam_model_.project3dToPixel(pt_cv);
-            }
-            catch(const std::exception& ex)
-            {
-                ROS_ERROR("%s", ex.what()); 
-            }
-            if (uv.x > 0 && uv.x < image_in.cols && uv.y < image_in.rows && uv.y > 0)
-            {
-                cv::Point3_<uchar> *pix = image_in.ptr<cv::Point3_<uchar>>(uv.y, uv.x);
-                *out_x = *it_x;
-                *out_y = *it_x;
-                *out_z = *it_x;
-                uint32_t rgb = (uint32_t)pix->z << 16 | (uint32_t)pix->y << 8 | (uint32_t)pix->x;
-                *out_rgb = *(float *)(&rgb);
-                *out_int = *it_int;
-                float red = pix->z;
-                float green = pix->y;
-                float blue = pix->x;
-                float TGI = -0.5*(190*(red - green) - 120*(red - blue));
-                *out_tgi = TGI;
-                ++out_x;
-                ++out_y;
-                ++out_z;
-                ++out_int;
-                ++out_rgb;
-                ++out_tgi;
-                numpoints++;
-                ROS_ERROR("in loop");
-            }
-            ++it_x;
-            ++it_y;
-            ++it_z;
-            ++it_int;
+            *out_x = *it_x;
+            *out_y = *it_x;
+            *out_z = *it_x;
+            cv::Point3_<uchar> *pix = image_in.ptr<cv::Point3_<uchar>>(uv.y, uv.x);
+            uint32_t rgb = (uint32_t)pix->z << 16 | (uint32_t)pix->y << 8 | (uint32_t)pix->x;
+            *out_rgb = *(float *)(&rgb);
+            *out_int = *it_int;
+            float red = pix->z;
+            float green = pix->y;
+            float blue = pix->x;
+            float TGI = -0.5*(190*(red - green) - 120*(red - blue));
+            *out_tgi = TGI;
+            ++out_x;
+            ++out_y;
+            ++out_z;
+            ++out_int;
+            ++out_rgb;
+            ++out_tgi;
+            numpoints++;
         }
+        ++it_x;
+        ++it_y;
+        ++it_z;
+        ++it_int;
     }
-    // modifier.resize(numpoints);
-    cloud_colored->width  = numpoints;
-    
+    modifier.resize(numpoints);
     try
     {
         transformStamped = tf_buffer_->lookupTransform(pcl_msg->header.frame_id,image->header.frame_id, ros::Time(0));

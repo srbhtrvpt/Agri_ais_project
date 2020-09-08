@@ -16,6 +16,9 @@ sensor_msgs::CameraInfo cam_info_msg;
 
 void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointCloud2ConstPtr &cloud)
 {
+    if(!pcl_coloriser->setCameraInfo(cam_info_msg)){
+        return;
+    }
    sensor_msgs::PointCloud2::Ptr colorised_pcl = pcl_coloriser->colorisedCloud(image, cloud);
     point_cloud_pub.publish(*colorised_pcl);
     
@@ -36,11 +39,9 @@ int main(int argc, char *argv[])
 
     tf2_ros::Buffer tf_buffer;
     tf2_ros::TransformListener tf_listener(tf_buffer);
-    // const sensor_msgs::CameraInfoConstPtr &cam_info_msg_orig = ros::topic::waitForMessage<sensor_msgs::CameraInfo>("camera_info", ros::Duration(1.0));
-    // sensor_msgs::CameraInfo cam_info_msg;
-    // cam_info_msg = *cam_info_msg_orig;
     sub = nh.subscribe("camera_info", 5, cameraInfoCallback);
-    pcl_coloriser = new PclColoriser(cam_info_msg, &tf_buffer);
+    pcl_coloriser = new PclColoriser(&tf_buffer);
+
 
     message_filters::Subscriber<sensor_msgs::Image> image_sub(nh, "input_image", 10);
     message_filters::Subscriber<sensor_msgs::PointCloud2> cloud_sub(nh, "input_cloud", 10);
