@@ -70,6 +70,11 @@ target_link_libraries(pcl_integrator_lib
   ${catkin_LIBRARIES}
   )
 
+add_library(pcl_segmentor_lib
+   src/pcl_segmentor.cpp
+)
+target_link_libraries(pcl_segmentor_lib ${catkin_LIBRARIES})# ${PCL_LIBRARIES})
+
 add_library(pcl_coloriser_lib
    src/pcl_coloriser.cpp
 )
@@ -87,9 +92,15 @@ target_link_libraries(pcl_coloriser_lib ${catkin_LIBRARIES})# ${OpenCV_LIBS})
 add_executable(pcl_colored_node src/pcl_colored_node.cpp)
 target_link_libraries(pcl_colored_node ${catkin_LIBRARIES})# ${OpenCV_LIBS})
 
+add_executable(pcl_segmentor_node src/pcl_segmentor_node.cpp)
+target_link_libraries(pcl_segmentor_node ${catkin_LIBRARIES}
+  pcl_segmentor_lib)
+
+
 add_executable(pcl_coloriser_node src/pcl_coloriser_node.cpp)
 target_link_libraries(pcl_coloriser_node ${catkin_LIBRARIES}
   pcl_coloriser_lib)
+
 
 add_executable(pcl_integrator_node
   src/pcl_integrator_node.cpp

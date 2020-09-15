@@ -8,9 +8,6 @@
 #include <opencv/cv.h>
 #include <cv_bridge/cv_bridge.h>
 
-#include <pcl_ros/point_cloud.h>
-#include <pcl_ros/transforms.h>
-#include <pcl_conversions/pcl_conversions.h>
 
 
 PclColoriser::PclColoriser(tf2_ros::Buffer *tf_buffer): tf_buffer_(tf_buffer){
@@ -130,6 +127,6 @@ sensor_msgs::PointCloud2::Ptr PclColoriser::colorisedCloud(const sensor_msgs::Im
         ROS_ERROR("%s", ex.what());       
     }
     tf2::doTransform(*cloud_colored, *cloud_colored, transformStamped);
-    cloud_colored->header = pcl_msg->header;
+    cloud_colored->header.stamp = pcl_msg->header.stamp;
     return cloud_colored;
 }
