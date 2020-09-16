@@ -1,5 +1,0 @@
-<launch>
-    <param name="use_sim_time" value="true" />
-    <node pkg="rosbag" type="play" name="largeplants_player" output="screen" args="--clock -l /home/srbh/agrirobo_proj/with_pcls/largeplants.bag"/>
-    
-</launch>
