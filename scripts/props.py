@@ -11,8 +11,7 @@ import sklearn.metrics as metrics
 
 
 
-path = "../data/"
-path_acc = "../data/accumulated/colored/"
+path = "../data/"path_acc = "../data/accumulated/full_pcl/"
 colored_path = "/home/srbh/agrirobo_proj/with_pcls/data/full_pcl/"
 
 colored_files = glob.glob(colored_path + "/*.txt")
@@ -97,6 +96,7 @@ train_data = pd.DataFrame(
             "vari": full_df["vari"].tolist()
         }
     )
+train_data = train_data.replace([np.inf, -np.inf], np.nan)
 train_data = train_data.fillna(value=0)
 test_data = pd.DataFrame(
         {
@@ -125,7 +125,7 @@ centroids = kmeans.cluster_centers_
 
 
 n_classes = 2
-gmm = skm.GaussianMixture(n_components=n_classes, random_state= 2).fit(train_data)
+gmm = skm.GaussianMixture(n_components=n_classes, random_state= 3).fit(train_data)
 labels_gmm = gmm.predict(test_data)
 # #probs = gmm.predict_proba(test_data)
 
@@ -152,7 +152,7 @@ for k, g, s in zip(labels_km, labels_gmm, scores_norm):
     if k == g:
         labels_true.append(k)
     else:
-        if s > 0.88:
+        if s > 0.89:
             labels_true.append(g)
         else:
             labels_true.append(k)
@@ -160,7 +160,22 @@ for k, g, s in zip(labels_km, labels_gmm, scores_norm):
 # n_classes = 2
 # brc = skc.Birch(n_clusters = n_classes).fit(test_data)
 # labels_brc = brc.predict(test_data)
-# fig10, ax = plt.subplots()
+# fig12, ax = plt.subplots()
+# sc = ax.scatter(
+#     df["x"],
+#     df["y"],
+#     c=labels_brc,
+#     cmap="inferno",
+#     s=0.5 ** 2,
+#     marker="H",
+# )
+# ax.set_xlabel("x")
+# ax.set_ylabel("y")
+# fig12.colorbar(sc, ax=ax, label="labels")
+# fig12.suptitle("Birch")
+# fig12.savefig(path_acc + "brc_segmentation.png", dpi=400)
+
+# fig12, ax = plt.subplots()
 # sc = ax.scatter(
 #     df["x"],
 #     df["y"],
@@ -171,19 +186,67 @@ for k, g, s in zip(labels_km, labels_gmm, scores_norm):
 # )
 # ax.set_xlabel("x")
 # ax.set_ylabel("y")
-# fig10.colorbar(sc, ax=ax, label="labels")
-# fig10.suptitle("Ground truth")
-# fig10.savefig(path_acc + "true_segmentation.png", dpi=400)
-
+# fig12.colorbar(sc, ax=ax, label="labels")
+# fig12.suptitle("Ground truth")
+# fig12.savefig(path_acc + "true_segmentation.png", dpi=400)
 
 
 n_classes_km = 2
-kmeans = skc.MiniBatchKMeans(n_classes_km, random_state= 42).fit(train_data_pred)
+kmeans = skc.MiniBatchKMeans(n_classes_km, random_state= 4).fit(train_data_pred)
 labels_km_pred = kmeans.predict(test_data_pred)
 
+
+# fig1, ax = plt.subplots()
+# sc = ax.scatter(
+#     df["x"],
+#     df["y"],
+#     c=labels_km_pred,
+#     cmap="inferno",
+#     s=0.5 ** 2,
+#     marker="H",
+# )
+# ax.set_xlabel("x")
+# ax.set_ylabel("y")
+# fig1.colorbar(sc, ax=ax, label="labels")
+# fig1.suptitle("km ivc")
+# fig1.savefig(path_acc + "ivc_kmeans_segmentation.png", dpi=400)
+
 n_classes = 2
-gmm = skm.GaussianMixture(n_components=n_classes, random_state= 2).fit(train_data_pred)
+gmm = skm.GaussianMixture(n_components=n_classes, random_state= 42).fit(train_data_pred)
 labels_gmm_pred = gmm.predict(test_data_pred)
+
+# fig2, ax = plt.subplots()
+# sc = ax.scatter(
+#     df["x"],
+#     df["y"],
+#     c=labels_gmm_pred,
+#     cmap="inferno",
+#     s=0.5 ** 2,
+#     marker="H",
+# )
+# ax.set_xlabel("x")
+# ax.set_ylabel("y")
+# fig2.colorbar(sc, ax=ax, label="labels")
+# fig2.suptitle("gm ivc")
+# fig2.savefig(path_acc + "ivc_gmm_segmentation.png", dpi=400)
+
+# gmm_acc = metrics.accuracy_score(labels_true, labels_gmm)
+# km_acc = metrics.accuracy_score(labels_true, labels_km)
+# true_acc = metrics.accuracy_score(labels_true, labels_brc)
+# kvg = metrics.accuracy_score(labels_gmm, labels_km)
+
+
 
 gmm_acc = metrics.accuracy_score(labels_true, labels_gmm_pred)
 km_acc = metrics.accuracy_score(labels_true, labels_km_pred)
+
+gm_f1 = metrics.f1_score(labels_true, labels_gmm_pred)
+km_f1 = metrics.f1_score(labels_true, labels_km_pred)
+
+gm_mc = metrics.matthews_corrcoef(labels_true, labels_gmm_pred)
+km_mc = metrics.matthews_corrcoef(labels_true, labels_km_pred)
+
+print(gmm_acc, gm_f1,  gm_mc)
+print(km_acc, km_f1, km_mc)
+# print(true_acc)
+# print(kvg)
