@@ -2,17 +2,16 @@
 
 
 PclSegmentor::PclSegmentor(sensor_msgs::PointCloud2::Ptr pcl_msg_orig): pcl_msg(pcl_msg_orig){
+    
 }
 
-sensor_msgs::PointCloud2::Ptr PclSegmentor::curvatureCloud(int KSearchRadius){
-
-    sensor_msgs::PointCloud2::Ptr curvature_pcl(new sensor_msgs::PointCloud2);
-    pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>());
-    std::vector<int> map;
-    pcl::NormalEstimation<PointT, PointNT> ne;
+bool computePclNormals(int KSearchRadius){
     pcl::fromROSMsg(*pcl_msg, *cloud_in);
+    std::vector<int> map;
     cloud_in->is_dense = false;
     pcl::removeNaNFromPointCloud(*cloud_in, *cloud_in, map);
+    pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>());
+    pcl::NormalEstimation<PointT, PointNT> ne;
     ne.setInputCloud(cloud_in);
     ne.setSearchMethod(tree);
     // ne.setRadiusSearch(0.3);
@@ -25,6 +24,12 @@ sensor_msgs::PointCloud2::Ptr PclSegmentor::curvatureCloud(int KSearchRadius){
         ROS_ERROR("Failed to compute normals");
         computed_normals = false;
     }
+    return computed_normals;
+}
+
+sensor_msgs::PointCloud2::Ptr PclSegmentor::curvatureCloud(){
+
+    sensor_msgs::PointCloud2::Ptr curvature_pcl(new sensor_msgs::PointCloud2);
     
     sensor_msgs::PointCloud2Iterator<float> it_tgi(*pcl_msg, "tgi");
     sensor_msgs::PointCloud2Iterator<float> it_rgb(*pcl_msg, "rgb");
@@ -96,32 +101,37 @@ PointCloudN::Ptr PclSegmentor::getCloudNormals(){
 
 bool PclSegmentor::segmentPcl(double NormalDistanceWeight, double DistanceThreshold){
 
-    pcl::SACSegmentationFromNormals<PointT, PointNT> seg;
-    seg.setOptimizeCoefficients(true);
-    seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);  // plane normal model
-    seg.setNormalDistanceWeight(NormalDistanceWeight);
-    seg.setDistanceThreshold(DistanceThreshold);
-
-    // plane model
-    /*
-    coefficients->values.resize(4);
-    pcl::SACSegmentation<PointT> seg;
-    seg.setOptimizeCoefficients(true);
-    seg.setModelType(pcl::SACMODEL_PLANE);
-    seg.setDistanceThreshold(DistanceThreshold); */
-
-    seg.setInputCloud(cloud_in);
-    seg.setInputNormals(cloud_normals);
-    seg.setMethodType(pcl::SAC_RANSAC);
-    seg.segment(*inliers, *coefficients);
-    if (inliers->indices.size() == 0){
-        PCL_ERROR("Could not estimate a planar model.\n");
-        segmented = false;
-        return segmented;
+    if(!computed_normals){
+            return false;
     }
     else{
-        segmented = true;
-        return segmented;
+        pcl::SACSegmentationFromNormals<PointT, PointNT> seg;
+        seg.setOptimizeCoefficients(true);
+        seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);  // plane normal model
+        seg.setNormalDistanceWeight(NormalDistanceWeight);
+        seg.setDistanceThreshold(DistanceThreshold);
+
+        // plane model
+        /*
+        coefficients->values.resize(4);
+        pcl::SACSegmentation<PointT> seg;
+        seg.setOptimizeCoefficients(true);
+        seg.setModelType(pcl::SACMODEL_PLANE);
+        seg.setDistanceThreshold(DistanceThreshold); */
+
+        seg.setInputCloud(cloud_in);
+        seg.setInputNormals(cloud_normals);
+        seg.setMethodType(pcl::SAC_RANSAC);
+        seg.segment(*inliers, *coefficients);
+        if (inliers->indices.size() == 0){
+            PCL_ERROR("Could not estimate a planar model.\n");
+            segmented = false;
+            return segmented;
+        }
+        else{
+            segmented = true;
+            return segmented;
+        }
     }
 }
 

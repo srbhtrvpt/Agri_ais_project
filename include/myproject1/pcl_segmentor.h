@@ -34,6 +34,7 @@ public:
     PointCloudN::Ptr getCloudNormals();
     sensor_msgs::PointCloud2::Ptr inlierCloud();
     sensor_msgs::PointCloud2::Ptr outlierCloud();
+    bool computePclNormals(int KSearchRadius);
 
 
 protected:

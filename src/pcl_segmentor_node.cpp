@@ -106,21 +106,24 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros){
     sensor_msgs::PointCloud2::Ptr pcl_msg(new sensor_msgs::PointCloud2());
     *pcl_msg = *cloud_ros;
     pcl_segmentor = new PclSegmentor(pcl_msg);
-    sensor_msgs::PointCloud2::Ptr cloud_out = pcl_segmentor->curvatureCloud(ksearch_radius);
-    point_cloud_pub1.publish(*cloud_out);
-    if(!pcl_segmentor->segmentPcl(NormalDistanceWeight,DistanceThreshold)){
-        return;
+    if(pcl_segmentor->computePclNormals(ksearch_radius)){
+        sensor_msgs::PointCloud2::Ptr cloud_out = pcl_segmentor->curvatureCloud();
+        point_cloud_pub1.publish(*cloud_out);
     }
-    sensor_msgs::PointCloud2::Ptr cloud_inliers = pcl_segmentor->inlierCloud();
-    point_cloud_pub2.publish(*cloud_inliers);
-
-    sensor_msgs::PointCloud2::Ptr cloud_outliers = pcl_segmentor->outlierCloud();
-    point_cloud_pub3.publish(*cloud_outliers);
     
-    pcl::ModelCoefficients::Ptr coefficients = pcl_segmentor->getCoefficients();
-    visualization_msgs::Marker plane_marker = init_plane_marker(set_orientation(coefficients), coefficients);
-    plane_marker.header.stamp = cloud_ros->header.stamp;
-    vis_marker_pub1.publish(plane_marker);
+    // if(!pcl_segmentor->segmentPcl(NormalDistanceWeight,DistanceThreshold)){
+    //     return;
+    // }
+    // sensor_msgs::PointCloud2::Ptr cloud_inliers = pcl_segmentor->inlierCloud();
+    // point_cloud_pub2.publish(*cloud_inliers);
+
+    // sensor_msgs::PointCloud2::Ptr cloud_outliers = pcl_segmentor->outlierCloud();
+    // point_cloud_pub3.publish(*cloud_outliers);
+    
+    // pcl::ModelCoefficients::Ptr coefficients = pcl_segmentor->getCoefficients();
+    // visualization_msgs::Marker plane_marker = init_plane_marker(set_orientation(coefficients), coefficients);
+    // plane_marker.header.stamp = cloud_ros->header.stamp;
+    // vis_marker_pub1.publish(plane_marker);
     // normal_marker.header.frame_id = cloud_ros->header.frame_id;
     // normal_marker.header.stamp = cloud_ros->header.stamp;
     // vis_marker_pub.publish(normal_marker);
