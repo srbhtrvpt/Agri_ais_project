@@ -18,7 +18,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 
-typedef pcl::PointXYZI PointT;
+typedef pcl::PointXYZ PointT;
 typedef pcl::Normal PointNT;
 typedef pcl::PointCloud<PointT> PointCloud;
 typedef pcl::PointCloud<PointNT> PointCloudN;
@@ -26,7 +26,7 @@ class PclSegmentor
 {
 public:
 
-    PclSegmentor(const sensor_msgs::PointCloud2ConstPtr &pcl_msg_orig);
+    PclSegmentor(sensor_msgs::PointCloud2::Ptr pcl_msg_orig);
     sensor_msgs::PointCloud2::Ptr curvatureCloud(int KSearchRadius);
     bool segmentPcl(double NormalDistanceWeight, double DistanceThreshold);
     pcl::PointIndices::Ptr getInlierIndices();
@@ -37,10 +37,12 @@ public:
 protected:
     bool segmented, computed_normals;
     sensor_msgs::PointCloud2::Ptr pcl_msg;
-    PointCloud::Ptr cloud_in;
-    PointCloudN::Ptr cloud_normals;
-    pcl::PointIndices::Ptr inliers;
-    pcl::ModelCoefficients::Ptr coefficients;
+    PointCloud::Ptr cloud_in{new PointCloud};
+    PointCloudN::Ptr cloud_normals{new PointCloudN};
+    pcl::PointIndices::Ptr inliers{new pcl::PointIndices};
+    pcl::ModelCoefficients::Ptr coefficients{new pcl::ModelCoefficients};
+
+    sensor_msgs::PointCloud2::Ptr getPclXYZ() const;
 
 };
 

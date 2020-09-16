@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 {
     cxxopts::Options options("pcl_integrator_offline", "pcl_integrator_offline_node");
 
-    options.add_options()("f,fixed_frame", "fixed frame for integration", cxxopts::value<std::string>()->default_value("odom"))("b,crop_frame", "base footprint frame to crop", cxxopts::value<std::string>()->default_value("base_footprint"))("i,input_bag_path", "bag for input bag with raw pcls", cxxopts::value<std::string>()->default_value("/home/srbh/agrirobo_proj/with_pcls/largeplants.bag"))("t,pcl_topic", "the pcl topic to integrate", cxxopts::value<std::string>()->default_value("/sensor/laser/vlp16/front/pointcloud_xyzi"))("c,crop_flag", "Enable cropping pcl", cxxopts::value<bool>()->default_value("true"))("m,max_buffer_size", "Param maximum buffer size", cxxopts::value<int>()->default_value("10"))("x,size_x", "Param x for crop box in m", cxxopts::value<float>()->default_value("8."))("y,size_y", "Param y for crop box in m", cxxopts::value<float>()->default_value("6."))("w,offset_x", "Param x offset for crop box in m", cxxopts::value<float>()->default_value("1."))("z,offset_y", "Param y offset for crop box in m", cxxopts::value<float>()->default_value("0."))("h,help", "Print usage");
+    options.add_options()("r,target_frame", "target frame for output", cxxopts::value<std::string>()->default_value("base_sensor_vlp16_front_laser_optical_link"))("f,fixed_frame", "fixed frame for integration", cxxopts::value<std::string>()->default_value("odom"))("b,crop_frame", "base footprint frame to crop", cxxopts::value<std::string>()->default_value("base_footprint"))("i,input_bag_path", "bag for input bag with raw pcls", cxxopts::value<std::string>()->default_value("/home/srbh/agrirobo_proj/with_pcls/largeplants.bag"))("t,pcl_topic", "the pcl topic to integrate", cxxopts::value<std::string>()->default_value("/sensor/laser/vlp16/front/pointcloud_xyzi"))("c,crop_flag", "Enable cropping pcl", cxxopts::value<bool>()->default_value("true"))("m,max_buffer_size", "Param maximum buffer size", cxxopts::value<int>()->default_value("10"))("x,size_x", "Param x for crop box in m", cxxopts::value<float>()->default_value("8."))("y,size_y", "Param y for crop box in m", cxxopts::value<float>()->default_value("6."))("w,offset_x", "Param x offset for crop box in m", cxxopts::value<float>()->default_value("1."))("z,offset_y", "Param y offset for crop box in m", cxxopts::value<float>()->default_value("0."))("h,help", "Print usage");
 
     auto result = options.parse(argc, argv);
 
@@ -42,6 +42,11 @@ int main(int argc, char *argv[])
     {
         pcl_topic = result["pcl_topic"].as<std::string>();
     }
+    std::string target_frame;
+    if (result.count("target_frame"))
+    {
+        target_frame = result["target_frame"].as<std::string>();
+    }
 
     bool crop_flag = result["crop_flag"].as<bool>();
     int max_buffer_size = result["max_buffer_size"].as<int>();
@@ -49,7 +54,6 @@ int main(int argc, char *argv[])
     float size_y = result["size_y"].as<float>();
     float offset_x = result["offset_x"].as<float>();
     float offset_y = result["offset_y"].as<float>();
-    std::string target_frame = crop_frame;
     /*
     bool crop_flag = true;
     int max_buffer_size = 10;

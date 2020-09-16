@@ -3,7 +3,7 @@
     <node name="pcl_colored_node" pkg="myproject1" type="pcl_colored_node" output="screen">
 
         <param name="output_path" value="/home/srbh/agrirobo_proj/with_pcls/data/colored/" />
-        <param name="save_f" value="true" />
+        <param name="save_f" value="false" />
 
         <remap from="input_cloud" to="/sensor/laser/vlp16/front/integrated_pointcloud_xyzi"/>
         <remap from="camera_info" to="/sensor/camera/blackfly/camera_info"/>

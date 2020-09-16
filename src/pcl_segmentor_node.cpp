@@ -11,11 +11,6 @@
 ros::Publisher point_cloud_pub, point_cloud_pub1, point_cloud_pub2, vis_marker_pub, vis_marker_pub1;
 PclSegmentor* pcl_segmentor;
 
-typedef pcl::PointXYZI PointT;
-typedef pcl::Normal PointNT;
-typedef pcl::PointCloud<PointT> PointCloud;
-typedef pcl::PointCloud<PointNT> PointCloudN;
-
 /*
 std::vector<int> neighborhood_plus(int cc, int rr, PointCloud::Ptr cloud_in);
 std::vector<int> neighborhood_sq(int cc, int rr, PointCloud::Ptr cloud_in);
@@ -34,8 +29,7 @@ std::string filepath;
 tf::TransformListener *listener;
 
 
-tf2::Quaternion set_orientation(pcl::ModelCoefficients::Ptr coeffs)
-{
+tf2::Quaternion set_orientation(pcl::ModelCoefficients::Ptr coeffs){
     tf2::Quaternion quat;
     tf2::Vector3 n_vec;
     n_vec.setX(coeffs->values[0]);
@@ -107,7 +101,9 @@ bool write_to_file(std::string filep, std::string data){
 
 void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros){
 
-    pcl_segmentor = new PclSegmentor(cloud_ros);
+    sensor_msgs::PointCloud2::Ptr pcl_msg(new sensor_msgs::PointCloud2());
+    *pcl_msg = *cloud_ros;
+    pcl_segmentor = new PclSegmentor(pcl_msg);
     sensor_msgs::PointCloud2::Ptr cloud_out = pcl_segmentor->curvatureCloud(ksearch_radius);
     point_cloud_pub1.publish(*cloud_out);
     if(!pcl_segmentor->segmentPcl(NormalDistanceWeight,DistanceThreshold)){

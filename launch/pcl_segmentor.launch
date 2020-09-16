@@ -11,9 +11,9 @@
         <!--0 to 100-->
         <!--param name="curvature_threshold" value="0.08f" /-->
         
-        <remap from="input_cloud" to="/sensor/laser/vlp16/front/integrated_pointcloud_xyzi"/>
+        <remap from="input_cloud" to="/sensor/laser/vlp16/front/colored_pointcloud_xyzirgbt"/>
         <!-- <remap from="output_cloud" to="/sensor/laser/vlp16/front/point_cloud_outliers"/> -->
         <remap from="output_cloud2" to="/sensor/laser/vlp16/front/point_cloud_inliers"/>
-        <remap from="output_cloud1" to="/sensor/laser/vlp16/front/point_cloud_xyzinc"/>
+        <remap from="output_cloud1" to="/sensor/laser/vlp16/front/comprehensive_pointcloud_xyzirgbtvc"/>
     </node>
 </launch>

@@ -2,12 +2,12 @@
    <arg name="fixed_frame" default = "odom" />
    <arg name="crop_frame" default = "base_footprint" />
    <arg name="target_frame" default = "base_sensor_vlp16_front_laser_optical_link" />
-   <arg name="input_bag" default = "/home/srbh/agrirobo_proj/with_pcls/largeplants.bag" />
+   <arg name="input_bag" default = "/home/srbh/agrirobo_proj/with_pcls/smallplants.bag" />
    <arg name="topic" default = "/sensor/laser/vlp16/front/pointcloud_xyzi" />
    <arg name="crop" default = "true" />
    <arg name="max_buffer_size" default = "10" />
-   <arg name="x" default = "8." />
-   <arg name="y" default = "6." />
+   <arg name="x" default = "5." />
+   <arg name="y" default = "5." />
    <arg name="x_offset" default = "1." />
    <arg name="y_offset" default = "0." />
 
