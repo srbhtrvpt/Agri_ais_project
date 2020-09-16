@@ -4,51 +4,13 @@
 PclSegmentor::PclSegmentor(sensor_msgs::PointCloud2::Ptr pcl_msg_orig): pcl_msg(pcl_msg_orig){
 }
 
-sensor_msgs::PointCloud2::Ptr PclSegmentor::getPclXYZ() const{
-
-    sensor_msgs::PointCloud2::Ptr pcl_msg_xyz(new sensor_msgs::PointCloud2());
-    pcl_msg_xyz->is_bigendian = false;
-    pcl_msg_xyz->is_dense = false;
-    sensor_msgs::PointCloud2Modifier modifier(*pcl_msg_xyz);
-    modifier.setPointCloud2FieldsByString(1,"xyz");
-    modifier.resize(pcl_msg->width);
-    sensor_msgs::PointCloud2Iterator<float> it_x(*pcl_msg, "x");
-    sensor_msgs::PointCloud2Iterator<float> it_y(*pcl_msg, "y");
-    sensor_msgs::PointCloud2Iterator<float> it_z(*pcl_msg, "z");
-
-    sensor_msgs::PointCloud2Iterator<float> out_x(*pcl_msg_xyz, "x");
-    sensor_msgs::PointCloud2Iterator<float> out_y(*pcl_msg_xyz, "y");
-    sensor_msgs::PointCloud2Iterator<float> out_z(*pcl_msg_xyz, "z");
-
-    int numpoints = 0;
-    while (it_x != it_x.end()){   
-        *out_x = *it_x;
-        *out_y = *it_y;
-        *out_z = *it_z;
-        ++out_x;
-        ++out_y;
-        ++out_z;
-        ++it_x;
-        ++it_y;
-        ++it_z;
-        numpoints++;
-
-    }
-    pcl_msg_xyz->header.stamp = pcl_msg->header.stamp;
-    pcl_msg_xyz->header.frame_id = pcl_msg->header.frame_id;
-    modifier.resize(numpoints);
-
-    return pcl_msg_xyz;
-}
-
 sensor_msgs::PointCloud2::Ptr PclSegmentor::curvatureCloud(int KSearchRadius){
 
     sensor_msgs::PointCloud2::Ptr curvature_pcl(new sensor_msgs::PointCloud2);
     pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>());
     std::vector<int> map;
     pcl::NormalEstimation<PointT, PointNT> ne;
-    sensor_msgs::PointCloud2::Ptr pcl_msg_xyz = getPclXYZ();
-    pcl::fromROSMsg(*pcl_msg_xyz, *cloud_in);
+    pcl::fromROSMsg(*pcl_msg, *cloud_in);
     cloud_in->is_dense = false;
     pcl::removeNaNFromPointCloud(*cloud_in, *cloud_in, map);
     ne.setInputCloud(cloud_in);
@@ -136,7 +98,7 @@ bool PclSegmentor::segmentPcl(double NormalDistanceWeight, double DistanceThresh
 
     pcl::SACSegmentationFromNormals<PointT, PointNT> seg;
     seg.setOptimizeCoefficients(true);
-    seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);
+    seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);  // plane normal model
     seg.setNormalDistanceWeight(NormalDistanceWeight);
     seg.setDistanceThreshold(DistanceThreshold);
 
@@ -152,21 +114,18 @@ bool PclSegmentor::segmentPcl(double NormalDistanceWeight, double DistanceThresh
     seg.setInputNormals(cloud_normals);
     seg.setMethodType(pcl::SAC_RANSAC);
     seg.segment(*inliers, *coefficients);
-    if (inliers->indices.size() == 0)
-    {
+    if (inliers->indices.size() == 0){
         PCL_ERROR("Could not estimate a planar model.\n");
         segmented = false;
         return segmented;
     }
-    //extract
-    else
-    {
+    else{
         segmented = true;
         return segmented;
     }
 }
 
-sensor_msgs::PointCloud2::Ptr PclSegmentor::segmentedCloud(){
+sensor_msgs::PointCloud2::Ptr PclSegmentor::inlierCloud(){
 
     if(!segmented){
         return NULL;
@@ -174,16 +133,30 @@ sensor_msgs::PointCloud2::Ptr PclSegmentor::segmentedCloud(){
     else{
         PointCloud::Ptr cloud_inliers(new PointCloud);
         sensor_msgs::PointCloud2::Ptr inliers_pcl(new sensor_msgs::PointCloud2);
-        pcl::ExtractIndices<PointT> extract;
         extract.setInputCloud(cloud_in);
         extract.setIndices(inliers);
         extract.setNegative(false);     // Extract the inliers
         extract.filter(*cloud_inliers); // cloud_inliers contains the plane
         pcl::toROSMsg(*cloud_inliers, *inliers_pcl);
         return inliers_pcl;
+    }
+}
 
-        // extract.setNegative(true); // Extract the outliers
-        // extract.filter(*cloud_outliers);
+
+sensor_msgs::PointCloud2::Ptr PclSegmentor::outlierCloud(){
+
+    if(!segmented){
+        return NULL;
+    }
+    else{
+        PointCloud::Ptr cloud_outliers(new PointCloud);
+        sensor_msgs::PointCloud2::Ptr outliers_pcl(new sensor_msgs::PointCloud2);
+        extract.setInputCloud(cloud_in);
+        extract.setIndices(inliers);
+        extract.setNegative(true); // Extract the outliers
+        extract.filter(*cloud_outliers); 
+        pcl::toROSMsg(*cloud_outliers, *outliers_pcl);
+        return outliers_pcl;
     }
 }
 

@@ -1,4 +1,0 @@
-<launch>
-    <param name="use_sim_time" value="true" />
-    <node pkg="rosbag" type="play" name="color_pcl_player" output="screen" args="--clock -l /home/srbh/agrirobo_proj/with_pcls/colored_pcl.bag /tf_null:=/tf"/>
-</launch>

@@ -32,7 +32,9 @@ public:
     pcl::PointIndices::Ptr getInlierIndices();
     pcl::ModelCoefficients::Ptr getCoefficients();
     PointCloudN::Ptr getCloudNormals();
-    sensor_msgs::PointCloud2::Ptr segmentedCloud();
+    sensor_msgs::PointCloud2::Ptr inlierCloud();
+    sensor_msgs::PointCloud2::Ptr outlierCloud();
+
 
 protected:
     bool segmented, computed_normals;
@@ -41,8 +43,7 @@ protected:
     PointCloudN::Ptr cloud_normals{new PointCloudN};
     pcl::PointIndices::Ptr inliers{new pcl::PointIndices};
     pcl::ModelCoefficients::Ptr coefficients{new pcl::ModelCoefficients};
-
-    sensor_msgs::PointCloud2::Ptr getPclXYZ() const;
+    pcl::ExtractIndices<PointT> extract;
 
 };
 

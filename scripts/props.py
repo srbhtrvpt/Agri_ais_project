@@ -13,63 +13,29 @@ import sklearn.metrics as metrics
 
 path = "../data/"
 path_acc = "../data/accumulated/colored/"
-colored_path = "/home/srbh/agrirobo_proj/with_pcls/data/colored/"
+colored_path = "/home/srbh/agrirobo_proj/with_pcls/data/full_pcl/"
 
 colored_files = glob.glob(colored_path + "/*.txt")
 li = []
 for filename in colored_files:
-    df = pd.read_csv(filename, names=["x","y","z","vari","tgi"] ,sep = "\t")
+    df = pd.read_csv(filename, names=["x","y","z","intensity","rgb","tgi","vari","curvature"] ,sep = "\t")
     li.append(df)
-colored_df = pd.concat(li, axis=0, ignore_index=True)
+full_df = pd.concat(li, axis=0, ignore_index=True)
 
-df = pd.read_csv(path + "1535635817097713.txt" ,sep = "\t", names=["x","y","z","vari","tgi"])
-
-
-intensity_path = "/home/srbh/agrirobo_proj/with_pcls/data/intensity/"
-curvature_path = "/home/srbh/agrirobo_proj/with_pcls/data/curvature/"
-
-intensity_files = glob.glob(intensity_path + "/*.txt")
-curvature_files = glob.glob(curvature_path + "/*.txt")
-
-li2 = []
-for filename in intensity_files:
-    df1 = pd.read_csv(filename, names=["values"])
-    df1 = (df1 - df1.min()) / (df1.max() - df1.min())
-    li2.append(df1)
-intensity_df = pd.concat(li2, axis=0, ignore_index=True)
-
-li1 = []
-# li = [pd.read_csv(filename, names=["values"]) for filename in curvature_files]
-for filename in curvature_files:
-    df1 = pd.read_csv(filename, names=["values"])
-    df1 = (df1 - df1.min()) / (df1.max() - df1.min())
-    li1.append(df1)
-curvature_df = pd.concat(li1, axis=0, ignore_index=True)
-
-
-intensity_df_single = pd.read_csv(
-            path + "1535635817097713_intensity.txt", names=["values"]
-        )
-curvature_df_single = pd.read_csv(
-            path + "1535635817097713_curvature.txt", names=["values"]
-        )
-x_df = pd.read_csv(path + "1535635817097713_x.txt", names=["values"])
-y_df = pd.read_csv(path + "1535635817097713_y.txt", names=["values"])
+df = pd.read_csv(path + "1535635817392096375.txt" ,sep = "\t", names=["x","y","z","intensity","rgb","tgi","vari","curvature"])
 
 
 train_data_pred = pd.DataFrame(
         {
-            "intensity": intensity_df["values"].tolist(),
-            "curvature": curvature_df["values"].tolist(),
+            "intensity": full_df["intensity"].tolist(),
+            "curvature": full_df["curvature"].tolist(),
         }
     )
 
 test_data_pred = pd.DataFrame(
         {
-            "x":x_df["values"].tolist(),
-            "y":y_df["values"].tolist(),
-            "intensity": intensity_df_single["values"].tolist(),
-            "curvature": curvature_df_single["values"].tolist(),
+            "intensity": df["intensity"].tolist(),
+            "curvature": df["curvature"].tolist(),
         }
     )
 
@@ -127,8 +93,8 @@ test_data_pred = pd.DataFrame(
 
 train_data = pd.DataFrame(
         {
-            "tgi": colored_df["tgi"].tolist(),
-            "vari": colored_df["vari"].tolist()
+            "tgi": full_df["tgi"].tolist(),
+            "vari": full_df["vari"].tolist()
         }
     )
 train_data = train_data.fillna(value=0)
@@ -136,7 +102,6 @@ test_data = pd.DataFrame(
         {
             "tgi": df["tgi"].tolist(),
             "vari": df["vari"].tolist()
-
         }
     )
 n_classes_km = 2
