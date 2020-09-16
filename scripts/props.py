@@ -11,7 +11,8 @@ import sklearn.metrics as metrics
 
 
 
-path = "../data/"path_acc = "../data/accumulated/full_pcl/"
+path = "../data/"
+path_acc = "../data/accumulated/full_pcl/"
 colored_path = "/home/srbh/agrirobo_proj/with_pcls/data/full_pcl/"
 
 colored_files = glob.glob(colored_path + "/*.txt")

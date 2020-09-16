@@ -2,11 +2,18 @@
 #define _PCL_COLORISER_H_
 
 #include <tf2_ros/buffer.h>
-
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/Image.h>
 #include <image_geometry/pinhole_camera_model.h>
 #include <sensor_msgs/image_encodings.h>
+
+#include <geometry_msgs/TransformStamped.h>
+#include <pcl_conversions/pcl_conversions.h> // pcl::concatenate
+#include <tf2_sensor_msgs/tf2_sensor_msgs.h> // tf2::doTransform for PointCloud2
+#include <sensor_msgs/Image.h>
+
+#include <opencv/cv.h>
+#include <cv_bridge/cv_bridge.h>
 
 
 class PclColoriser

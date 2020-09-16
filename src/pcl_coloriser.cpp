@@ -1,12 +1,5 @@
 #include "myproject1/pcl_coloriser.h"
 
-#include <geometry_msgs/TransformStamped.h>
-#include <pcl_conversions/pcl_conversions.h> // pcl::concatenate
-#include <tf2_sensor_msgs/tf2_sensor_msgs.h> // tf2::doTransform for PointCloud2
-#include <sensor_msgs/Image.h>
-
-#include <opencv/cv.h>
-#include <cv_bridge/cv_bridge.h>
 
 
 
