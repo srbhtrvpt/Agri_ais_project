@@ -5,7 +5,7 @@ PclSegmentor::PclSegmentor(sensor_msgs::PointCloud2::Ptr pcl_msg_orig): pcl_msg(
     
 }
 
-bool computePclNormals(int KSearchRadius){
+bool PclSegmentor::computePclNormals(int KSearchRadius){
     pcl::fromROSMsg(*pcl_msg, *cloud_in);
     std::vector<int> map;
     cloud_in->is_dense = false;

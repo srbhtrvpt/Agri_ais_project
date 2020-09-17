@@ -1,0 +1,16 @@
+<launch>
+
+    <node name="pcl_featurizer_node" pkg="myproject1" type="pcl_featurizer_node" output="screen">
+
+        <param name="op_path" value="/home/srbh/agrirobo_proj/with_pcls/data/full_pcl/" />
+        <param name="get_curv" value="true" />
+        <param name="save_fl" value="true" />
+        <param name="KSearchRadius" value="16" />
+
+        <remap from="input_cloud" to="/sensor/laser/vlp16/front/integrated_pointcloud_xyzi"/>
+        <remap from="camera_info" to="/sensor/camera/blackfly/camera_info"/>
+        <remap from="input_image" to="/sensor/camera/blackfly/image_rect_color"/>
+
+        <remap from="output_cloud" to="/sensor/laser/vlp16/front/comprehensive_pointcloud_xyzirgbtvc"/>
+    </node>
+</launch>

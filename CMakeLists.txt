@@ -94,9 +94,9 @@ target_link_libraries(pcl_segmentor_node ${catkin_LIBRARIES}
   pcl_segmentor_lib)
 
 
-add_executable(pcl_coloriser_node src/pcl_coloriser_node.cpp)
-target_link_libraries(pcl_coloriser_node ${catkin_LIBRARIES}
-  pcl_coloriser_lib)
+add_executable(pcl_featurizer_node src/pcl_featurizer_node.cpp)
+target_link_libraries(pcl_featurizer_node ${catkin_LIBRARIES}
+  pcl_coloriser_lib pcl_segmentor_lib)
 
 
 add_executable(pcl_integrator_node

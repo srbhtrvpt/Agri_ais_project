@@ -27,7 +27,7 @@ class PclSegmentor
 public:
 
     PclSegmentor(sensor_msgs::PointCloud2::Ptr pcl_msg_orig);
-    sensor_msgs::PointCloud2::Ptr curvatureCloud(int KSearchRadius);
+    sensor_msgs::PointCloud2::Ptr curvatureCloud();
     bool segmentPcl(double NormalDistanceWeight, double DistanceThreshold);
     pcl::PointIndices::Ptr getInlierIndices();
     pcl::ModelCoefficients::Ptr getCoefficients();
