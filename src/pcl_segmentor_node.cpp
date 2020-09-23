@@ -7,6 +7,8 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
+#include <stdio.h>
+
 
 
 

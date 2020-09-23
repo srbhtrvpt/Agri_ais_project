@@ -3,9 +3,10 @@
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <boost/bind.hpp>
+#include <fstream>
 #include "myproject1/pcl_coloriser.h" 
 #include "myproject1/pcl_segmentor.h"
-
+#include <stdlib.h>
 
 using namespace message_filters;
 ros::Publisher point_cloud_pub;
@@ -102,7 +103,6 @@ void save_pcl_data(sensor_msgs::PointCloud2::Ptr cloud_out, bool get_curv){
     return;
 }  
 
-
 void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointCloud2ConstPtr &cloud)
 {
     if(!pcl_coloriser->setCameraInfo(cam_info_msg)){
@@ -112,18 +112,23 @@ void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointC
    if(get_curv){
         pcl_segmentor = new PclSegmentor(colorised_pcl);
         if(pcl_segmentor->computePclNormals(ksearch_radius)){
-            sensor_msgs::PointCloud2::Ptr cloud_out = pcl_segmentor->curvatureCloud();
-            point_cloud_pub.publish(*cloud_out);
+            sensor_msgs::PointCloud2::Ptr cloud_curv = pcl_segmentor->curvatureCloud();
             if(save_flag){
-                save_pcl_data(cloud_out,get_curv);
+                save_pcl_data(cloud_curv,get_curv);
+                // if(get_labels(std::to_string(cloud_curv->header.stamp.toNSec()))){
+                //     sensor_msgs::PointCloud2::Ptr cloud_labelled = add_labels(cloud_curv);
+                //     point_cloud_pub.publish(*cloud_labelled);
+                //     return;
+                // }
             }
+            point_cloud_pub.publish(*cloud_curv);
             return;
         }
    }
     point_cloud_pub.publish(*colorised_pcl);
-    if(save_flag){
-        save_pcl_data(colorised_pcl,get_curv);
-    }
+    // if(save_flag){
+    //     save_pcl_data(colorised_pcl,get_curv);
+    // }
 }
 
 void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &info_msg)
@@ -131,12 +136,14 @@ void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &info_msg)
     cam_info_msg = *info_msg;
 }
 
+
+
 int main(int argc, char *argv[])
 {
     ros::init(argc, argv, "pcl_featurizer_node");
     ros::NodeHandle nh;
     ros::NodeHandle nhPriv("~");
-    nhPriv.param<std::string>("op_path", filepath, "/home/srbh/agrirobo_proj/with_pcls/data/full_pcl/");
+    nhPriv.param<std::string>("op_path", filepath, "/home/srbh/agrirobo_proj/with_pcls/data/");
     nhPriv.param("get_curv", get_curv, true);
     nhPriv.param("KSearchRadius", ksearch_radius, 16);
     nhPriv.param("save_fl", save_flag, false);
@@ -155,6 +162,8 @@ int main(int argc, char *argv[])
     sync.registerCallback(boost::bind(&callback, _1, _2));
 
     point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("output_cloud", 10, true);
+
+
 
     ros::spin();
     return 0;

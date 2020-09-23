@@ -9,6 +9,7 @@ add_compile_options(-std=c++11)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  rospy
   tf
   tf2
   tf2_ros
@@ -44,7 +45,7 @@ find_package(Boost REQUIRED COMPONENTS system)
 catkin_package(
 # INCLUDE_DIRS include
 # LIBRARIES myproject1
-CATKIN_DEPENDS roscpp tf tf2 tf2_ros std_msgs pcl_ros sensor_msgs pcl_conversions image_geometry geometry_msgs nav_msgs visualization_msgs tf2_msgs tf2_sensor_msgs
+CATKIN_DEPENDS roscpp rospy tf tf2 tf2_ros std_msgs pcl_ros sensor_msgs pcl_conversions image_geometry geometry_msgs nav_msgs visualization_msgs tf2_msgs tf2_sensor_msgs
 DEPENDS Boost
 )
 

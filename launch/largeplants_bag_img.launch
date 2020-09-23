@@ -1,7 +1,7 @@
 <launch>
     <param name="use_sim_time" value="true" />
 
-    <node pkg="rosbag" type="play" name="largeplants_player" output="screen" args="--clock -l /home/srbh/agrirobo_proj/with_pcls/largeplants_integrated.bag"/>
+    <node pkg="rosbag" type="play" name="largeplants_player" output="screen" args="--clock /home/srbh/agrirobo_proj/with_pcls/largeplants_integrated.bag"/>
 
     <!-- <node pkg="tf" type="static_transform_publisher" name="tf_broadcaster" args="0.04768920 0.2435660 0.1190300 1.5675325611 0.01022335336 1.5721716462 base_sensor_vlp16_front_laser_optical_link base_sensor_blackfly_optical_link 100"/> -->
 

@@ -2,7 +2,7 @@
 
     <node name="pcl_featurizer_node" pkg="myproject1" type="pcl_featurizer_node" output="screen">
 
-        <param name="op_path" value="/home/srbh/agrirobo_proj/with_pcls/data/full_pcl/" />
+        <param name="op_path" value="/home/srbh/agrirobo_proj/with_pcls/data/" />
         <param name="get_curv" value="true" />
         <param name="save_fl" value="true" />
         <param name="KSearchRadius" value="16" />
