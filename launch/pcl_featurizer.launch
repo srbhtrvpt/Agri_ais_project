@@ -3,8 +3,8 @@
     <node name="pcl_featurizer_node" pkg="myproject1" type="pcl_featurizer_node" output="screen">
 
         <param name="op_path" value="/home/srbh/agrirobo_proj/with_pcls/data/" />
-        <param name="get_curv" value="true" />
-        <param name="save_fl" value="true" />
+        <!-- <param name="get_curv" value="true" />
+        <param name="save_fl" value="true" /> -->
         <param name="KSearchRadius" value="16" />
 
         <remap from="input_cloud" to="/sensor/laser/vlp16/front/integrated_pointcloud_xyzi"/>
@@ -13,4 +13,6 @@
 
         <remap from="output_cloud" to="/sensor/laser/vlp16/front/comprehensive_pointcloud_xyzirgbtvc"/>
     </node>
+
+    <node pkg="rosbag" type="record" name="record_rosbag_full_pcl" output="screen" args="-O /home/srbh/agrirobo_proj/with_pcls/full_pcl.bag --duration=30 /sensor/laser/vlp16/front/comprehensive_pointcloud_xyzirgbtvc /tf /sensor/camera/blackfly/image_rect_color /robot/odom /sensor/camera/blackfly/camera_info /sensor/laser/vlp16/front/integrated_pointcloud_xyzi" />
 </launch>

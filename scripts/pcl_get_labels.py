@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -9,13 +12,19 @@ import sklearn.cluster as skc
 import sklearn.mixture as skm
 import sklearn.metrics as metrics
 import argparse
+import rosbag
+import sensor_msgs.point_cloud2 as pc2
 
 
 colored_path = "/home/srbh/agrirobo_proj/with_pcls/data/"
 
 def open_data(pcd_name):
-    df = pd.read_csv(colored_path + pcd_name + ".txt" ,sep = "\t", names=["x","y","z","intensity","rgb","tgi","vari","curvature"])
-    return df
+    bag = rosbag.Bag(pcd_name)
+    for topic, msg, t in bag.read_messages(topics=['/sensor/laser/vlp16/front/comprehensive_pointcloud_xyzirgbtvc']):
+        cloud_points = list(pc2.read_points(msg, skip_nans=True, field_names = ("x","y","z","intensity","rgb","tgi","vari","curvature")))
+        print(cloud_points)
+    # df = pd.read_csv(colored_path + pcd_name + ".txt" ,sep = "\t", names=["x","y","z","intensity","rgb","tgi","vari","curvature"])
+    # return df
 
 def label_pcl(df,pcd_name):
 
@@ -57,9 +66,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("filename")
+
     args = parser.parse_args()
-    df = open_data(args.filename)
-    label_pcl(df,args.filename)
+
+    open_data("/home/srbh/agrirobo_proj/with_pcls/full_pcl.bag")
+    
+    # df = open_data(args.filename)
+    # label_pcl(df,args.filename)
+
+
+
     print("done", args.filename)
 
 
