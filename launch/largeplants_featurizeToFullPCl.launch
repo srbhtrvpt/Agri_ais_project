@@ -1,0 +1,28 @@
+<launch>
+    <param name="use_sim_time" value="true" />
+
+    <node pkg="rosbag" type="play" name="largeplants_player" output="screen" args="--clock /home/srbh/agrirobo_proj/with_pcls/largeplants_integrated.bag"/>
+
+    <!-- <node pkg="tf" type="static_transform_publisher" name="tf_broadcaster" args="0.04768920 0.2435660 0.1190300 1.5675325611 0.01022335336 1.5721716462 base_sensor_vlp16_front_laser_optical_link base_sensor_blackfly_optical_link 100"/> -->
+
+    <node name="republish" type="republish" pkg="image_transport" output="screen" args="compressed in:=/sensor/camera/blackfly/image_raw raw out:=/sensor/camera/blackfly/image_raw" />
+
+    <node name="image_proc" pkg="image_proc" type="image_proc" ns="/sensor/camera/blackfly/"/>
+
+    <node name="pcl_featurizer_node" pkg="myproject1" type="pcl_featurizer_node" output="screen">
+
+        <param name="op_path" value="/home/srbh/agrirobo_proj/with_pcls/data/" />
+        <!-- <param name="get_curv" value="true" />
+        <param name="save_fl" value="true" /> -->
+        <param name="KSearchRadius" value="16" />
+
+        <remap from="input_cloud" to="/sensor/laser/vlp16/front/integrated_pointcloud_xyzi"/>
+        <remap from="camera_info" to="/sensor/camera/blackfly/camera_info"/>
+        <remap from="input_image" to="/sensor/camera/blackfly/image_rect_color"/>
+
+        <remap from="output_cloud" to="/sensor/laser/vlp16/front/comprehensive_pointcloud_xyzirgbtvc"/>
+    </node>
+
+    <node pkg="rosbag" type="record" name="record_rosbag_full_pcl" output="screen" args="-O /home/srbh/agrirobo_proj/with_pcls/largeplants_FullPCl.bag --duration=30 /sensor/laser/vlp16/front/comprehensive_pointcloud_xyzirgbtvc /tf /sensor/camera/blackfly/image_rect_color /robot/odom /sensor/camera/blackfly/camera_info /sensor/laser/vlp16/front/integrated_pointcloud_xyzi" />
+
+</launch>

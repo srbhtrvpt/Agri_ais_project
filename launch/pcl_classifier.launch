@@ -1,0 +1,8 @@
+<launch>
+
+   <node pkg="myproject1" type="pclClassifier.py" name="pclClassifier" output="screen">
+      <param name="input_bag" value = "/home/srbh/agrirobo_proj/with_pcls/largeplants_FullPCl.bag" />
+      <param name="topic" value = "/sensor/laser/vlp16/front/comprehensive_pointcloud_xyzirgbtvc" />
+   </node>
+
+</launch>

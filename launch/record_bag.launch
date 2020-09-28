@@ -1,3 +1,0 @@
-<launch>
-    <node pkg="rosbag" type="record" name="color_pcl_recorder" output="screen" args="-b 1024 -O /home/srbh/agrirobo_proj/with_pcls/colored_pcl.bag --duration=30 /sensor/laser/vlp16/front/point_cloud_colored /tf /sensor/camera/blackfly/image_rect_color /robot/odom /sensor/camera/blackfly/camera_info /sensor/laser/vlp16/front/integrated_pointcloud_xyzi"/>
-</launch>

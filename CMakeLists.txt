@@ -86,6 +86,9 @@ target_link_libraries(pcl_coloriser_lib ${catkin_LIBRARIES})# ${OpenCV_LIBS})
 ## either from message generation or dynamic reconfigure
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+catkin_install_python(PROGRAMS scripts/pclClassifier.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
