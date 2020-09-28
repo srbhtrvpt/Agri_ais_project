@@ -83,36 +83,89 @@ visualization_msgs::Marker init_plane_marker(tf2::Quaternion marker_quat, pcl::M
     return plane_marker;
 }
 
+bool write_to_file(std::string filep, std::string data){
+
+    std::ofstream file;
+    file.open(filep, std::ios::out | std::ios::app);
+    if (file.fail())
+    {
+        throw std::ios_base::failure(std::strerror(errno));
+        return false;
+    }
+    file.exceptions(file.exceptions() | std::ios::failbit | std::ifstream::badbit);
+    file << data << std::endl;
+    ROS_INFO_THROTTLE(1, "w");
+    file.close();
+    return true;
+}
 
 void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros){
 
     sensor_msgs::PointCloud2::Ptr pcl_msg(new sensor_msgs::PointCloud2());
     *pcl_msg = *cloud_ros;
-    pcl_segmentor = new PclSegmentor(pcl_msg);
-    if(!pcl_segmentor->computePclNormals(ksearch_radius)){
-        return;
+    // pcl_segmentor = new PclSegmentor(pcl_msg);
+    // if(!pcl_segmentor->computePclNormals(ksearch_radius)){
+    //     return;
+    // }
+
+    
+    // if(!pcl_segmentor->segmentPcl(NormalDistanceWeight,DistanceThreshold)){
+    //     return;
+    // }
+    // pcl::ModelCoefficients::Ptr coefficients = pcl_segmentor->getCoefficients();
+    // visualization_msgs::Marker plane_marker = init_plane_marker(set_orientation(coefficients), coefficients);
+    // plane_marker.header.stamp = cloud_ros->header.stamp;
+    // vis_marker_pub1.publish(plane_marker);
+
+
+    // sensor_msgs::PointCloud2::Ptr cloud_inliers = pcl_segmentor->inlierCloud();
+    // point_cloud_pub2.publish(*cloud_inliers);
+
+    // sensor_msgs::PointCloud2::Ptr cloud_outliers = pcl_segmentor->outlierCloud();
+    // point_cloud_pub3.publish(*cloud_outliers);
+    
+    
+    // // normal_marker.header.frame_id = cloud_ros->header.frame_id;
+    // // normal_marker.header.stamp = cloud_ros->header.stamp;
+    // // vis_marker_pub.publish(normal_marker);
+    std::string filename;
+    try{
+        transformStamped = tf_buffer.lookupTransform("base_footprint",pcl_msg->header.frame_id, ros::Time(0));
     }
-
-    
-    if(!pcl_segmentor->segmentPcl(NormalDistanceWeight,DistanceThreshold)){
-        return;
+    catch (tf2::TransformException &ex){
+        ROS_ERROR("%s", ex.what());       
     }
-    pcl::ModelCoefficients::Ptr coefficients = pcl_segmentor->getCoefficients();
-    visualization_msgs::Marker plane_marker = init_plane_marker(set_orientation(coefficients), coefficients);
-    plane_marker.header.stamp = cloud_ros->header.stamp;
-    vis_marker_pub1.publish(plane_marker);
-
-
-    sensor_msgs::PointCloud2::Ptr cloud_inliers = pcl_segmentor->inlierCloud();
-    point_cloud_pub2.publish(*cloud_inliers);
-
-    sensor_msgs::PointCloud2::Ptr cloud_outliers = pcl_segmentor->outlierCloud();
-    point_cloud_pub3.publish(*cloud_outliers);
-    
-    
-    // normal_marker.header.frame_id = cloud_ros->header.frame_id;
-    // normal_marker.header.stamp = cloud_ros->header.stamp;
-    // vis_marker_pub.publish(normal_marker);
+    tf2::doTransform(*pcl_msg, *pcl_msg, transformStamped);
+    sensor_msgs::PointCloud2Iterator<float> out_x(*pcl_msg, "x");
+    sensor_msgs::PointCloud2Iterator<float> out_y(*pcl_msg, "y");
+    sensor_msgs::PointCloud2Iterator<float> out_z(*pcl_msg, "z");
+    sensor_msgs::PointCloud2Iterator<float> out_int(*pcl_msg, "intensity");
+    sensor_msgs::PointCloud2Iterator<float> out_rgb(*pcl_msg, "rgb");
+    sensor_msgs::PointCloud2Iterator<float> out_tgi(*pcl_msg, "tgi");
+    sensor_msgs::PointCloud2Iterator<float> out_vari(*pcl_msg, "vari");
+    sensor_msgs::PointCloud2Iterator<float> out_curv(*pcl_msg, "curvature");
+        
+    filename = filepath + std::to_string(pcl_msg->header.stamp.toNSec()) + ".txt";
+    while (out_x != out_x.end()){ 
+        if (!write_to_file(filename, std::to_string(*out_x) 
+                                    + "\t" + std::to_string(*out_y) 
+                                    + "\t" + std::to_string(*out_z) 
+                                    + "\t" + std::to_string(*out_int) 
+                                    + "\t" + std::to_string(*out_rgb)  
+                                    + "\t" + std::to_string(*out_tgi)  
+                                    + "\t" + std::to_string(*out_vari)  
+                                    + "\t" + std::to_string(*out_curv))){
+            ROS_ERROR("%s: error writing value ", __func__);
+        }
+        ++out_x;
+        ++out_y;
+        ++out_z;
+        ++out_int;
+        ++out_rgb;
+        ++out_tgi;
+        ++out_curv;
+        ++out_vari;
+    }    
 }
 
 int main(int argc, char *argv[])
