@@ -18,9 +18,6 @@ import sensor_msgs.point_cloud2 as pc2
 from sensor_msgs.msg import PointCloud2, PointField
 from std_msgs.msg import Header
 
-
-colored_path = "/home/srbh/agrirobo_proj/with_pcls/data/"
-
 fields = ["x","y","z","intensity","rgb","tgi","vari","curvature"]
 pcl_fields = [PointField('x', 0, PointField.FLOAT32, 1),
           PointField('y', 4, PointField.FLOAT32, 1),
@@ -29,7 +26,7 @@ pcl_fields = [PointField('x', 0, PointField.FLOAT32, 1),
           PointField('tgi', 16, PointField.FLOAT32, 1),
           PointField('rgb', 20, PointField.FLOAT32, 1),
           PointField('vari', 24, PointField.FLOAT32, 1),
-          PointField('curvature', 28, PointField.FLOAT32, 1),]
+          PointField('curvature', 28, PointField.FLOAT32, 1)]
 
 def label_pcl(df):
 
@@ -65,12 +62,11 @@ def label_pcl(df):
     return labels_true
 
 
-def open_data(pcl_name, pcl_topic):
+def open_data(filename, pcl_topic):
     count = 0
     topic_out = pcl_topic.replace(pcl_topic.split("/")[-1], '')
-    print(topic_out)
-    in_bag = rosbag.Bag(pcl_name)
-    out_bag_name = pcl_name.split(".")[0] + "_Labelled.bag"
+    in_bag = rosbag.Bag(filename)
+    out_bag_name = filename.split(".")[0] + "_Labelled.bag"
     out_bag = rosbag.Bag(out_bag_name, 'w')   
     for topic, msg, t in in_bag.read_messages():
         out_bag.write(topic, msg, t)
@@ -84,11 +80,11 @@ def open_data(pcl_name, pcl_topic):
                 df = df.append(df_p, ignore_index=True)
             print("labelling")
             labels = label_pcl(df)
-            for d, i in enumerate(labels):
+            for i, d in enumerate(labels):
                 if d == 0:
-                    points_g.append(list(df.iloc[i]))
+                    points_g.append(df.iloc[i].values.tolist())
                 else:
-                    points_p.append(list(df.iloc[i]))
+                    points_p.append(df.iloc[i].values.tolist())
             count += 1
             header.seq = count
             header.stamp = t
@@ -102,28 +98,25 @@ def open_data(pcl_name, pcl_topic):
     out_bag.close() 
     print("done")
 
-# def pclClassifier(filename, pcl_topic):
+# def pclClassifier():
 
-def pclClassifier():
-
-
-    rospy.init_node('pclClassifier', anonymous=True) 
-    filename = rospy.get_param("~input_bag")
-    pcl_topic = rospy.get_param("~topic")
-    open_data(filename, pcl_topic)
+    # rospy.init_node('pclClassifier', anonymous=True) 
+    # filename = rospy.get_param("~input_bag")
+    # pcl_topic = rospy.get_param("~topic")
+    # open_data(filename, pcl_topic)
         
 if __name__ == "__main__":
 
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("filename")
-    # parser.add_argument("topic")
-    # args = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("filename")
+    parser.add_argument("topic")
+    args = parser.parse_args()
+    # try:
+    #     # pclClassifier()
+    # except rospy.ROSInterruptException:
+    #   pass
 
-    try:
-        # pclClassifier(args.filename, args.topic)
-        pclClassifier()
-    except rospy.ROSInterruptException:
-      pass
+    open_data(args.filename, args.topic)
 
 
 

@@ -9,9 +9,6 @@
 #include <string>
 #include <stdio.h>
 
-
-
-
 /*
 std::vector<int> neighborhood_plus(int cc, int rr, PointCloud::Ptr cloud_in);
 std::vector<int> neighborhood_sq(int cc, int rr, PointCloud::Ptr cloud_in);
@@ -19,7 +16,6 @@ bool point_valid(int cc, int rr, PointCloud::Ptr cloud_in); */
 
 // visualization_msgs::Marker init_normal_marker();
 visualization_msgs::Marker init_plane_marker(tf2::Quaternion marker_quat, pcl::ModelCoefficients::Ptr coeffs);
-bool write_to_file(std::string filepath, std::string data);
 tf2::Quaternion set_orientation(pcl::ModelCoefficients::Ptr coeffs);
 
 int neighborhood_radius, ksearch_radius, normal_visualisation_scale;
@@ -96,20 +92,24 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros){
     if(!pcl_segmentor->computePclNormals(ksearch_radius)){
         return;
     }
+
     
     if(!pcl_segmentor->segmentPcl(NormalDistanceWeight,DistanceThreshold)){
         return;
     }
+    pcl::ModelCoefficients::Ptr coefficients = pcl_segmentor->getCoefficients();
+    visualization_msgs::Marker plane_marker = init_plane_marker(set_orientation(coefficients), coefficients);
+    plane_marker.header.stamp = cloud_ros->header.stamp;
+    vis_marker_pub1.publish(plane_marker);
+
+
     sensor_msgs::PointCloud2::Ptr cloud_inliers = pcl_segmentor->inlierCloud();
     point_cloud_pub2.publish(*cloud_inliers);
 
     sensor_msgs::PointCloud2::Ptr cloud_outliers = pcl_segmentor->outlierCloud();
     point_cloud_pub3.publish(*cloud_outliers);
     
-    pcl::ModelCoefficients::Ptr coefficients = pcl_segmentor->getCoefficients();
-    visualization_msgs::Marker plane_marker = init_plane_marker(set_orientation(coefficients), coefficients);
-    plane_marker.header.stamp = cloud_ros->header.stamp;
-    vis_marker_pub1.publish(plane_marker);
+    
     // normal_marker.header.frame_id = cloud_ros->header.frame_id;
     // normal_marker.header.stamp = cloud_ros->header.stamp;
     // vis_marker_pub.publish(normal_marker);
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
     // nhPriv.param("neighborhood_radius", neighborhood_radius, 2);
     nhPriv.param("ksearch_radius", ksearch_radius, 16);
     // nhPriv.param("normal_visualisation_scale", normal_visualisation_scale, 30);
-    nhPriv.param("curvature_threshold", curvature_threshold, 0.08f);
+    // nhPriv.param("curvature_threshold", curvature_threshold, 0.08f);
     nhPriv.param("Distance_Threshold", DistanceThreshold, 0.05);
     nhPriv.param("NormalDistanceWeight", NormalDistanceWeight, 0.02);
 
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
     ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback);
     // vis_marker_pub = nh.advertise<visualization_msgs::Marker>("normal_marker", 1, true);
     vis_marker_pub1 = nh.advertise<visualization_msgs::Marker>("plane_marker", 1, true);
-    point_cloud_pub1 = nh.advertise<sensor_msgs::PointCloud2>("output_cloud1", 10, true);
+    // point_cloud_pub1 = nh.advertise<sensor_msgs::PointCloud2>("output_cloud1", 10, true);
     point_cloud_pub2 = nh.advertise<sensor_msgs::PointCloud2>("output_cloud2", 10, true);
     point_cloud_pub3 = nh.advertise<sensor_msgs::PointCloud2>("output_cloud3", 10, true);
 
