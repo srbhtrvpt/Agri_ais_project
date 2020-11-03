@@ -121,7 +121,9 @@ bool PclSegmentor::segmentPcl(double NormalDistanceWeight, double DistanceThresh
 
         seg.setInputCloud(cloud_in);
         seg.setInputNormals(cloud_normals);
-        seg.setMethodType(pcl::SAC_RANSAC);
+        // seg.setMethodType(pcl::SAC_RANSAC);
+        seg.setMethodType(pcl::SAC_MLESAC);
+
         seg.segment(*inliers, *coefficients);
         if (inliers->indices.size() == 0){
             PCL_ERROR("Could not estimate a planar model.\n");

@@ -58,8 +58,26 @@ def label_pcl(df):
                 labels_true.append(g)
             else:
                 labels_true.append(k)
+
+    tgi1 = 0
+    tgi2 = 0
+    c1 = 0
+    c2 = 0
+    for i, d in enumerate(labels_true):
+        if d == 0:
+            tgi1 += df["tgi"].iloc[i]
+            c1 +=1
+        else:
+            tgi2 += df["tgi"].iloc[i]
+            c2 +=1
+    tgi1 = tgi1/c1
+    tgi2 = tgi2/c2
+    if tgi1 > tgi2:
+        p_label = 0
+    else :
+        p_label = 1
     
-    return labels_true
+    return labels_true, p_label
 
 
 def open_data(filename, pcl_topic):
@@ -79,12 +97,12 @@ def open_data(filename, pcl_topic):
                 df_p = pd.Series(p, index= fields)
                 df = df.append(df_p, ignore_index=True)
             print("labelling")
-            labels = label_pcl(df)
+            labels, p_label = label_pcl(df)
             for i, d in enumerate(labels):
-                if d == 0:
-                    points_g.append(df.iloc[i].values.tolist())
-                else:
+                if d == p_label:
                     points_p.append(df.iloc[i].values.tolist())
+                else:
+                    points_g.append(df.iloc[i].values.tolist())
             count += 1
             header.seq = count
             header.stamp = t
@@ -92,8 +110,8 @@ def open_data(filename, pcl_topic):
             pc2_g = pc2.create_cloud(header,pcl_fields,points_g)
             pc2_p = pc2.create_cloud(header,pcl_fields,points_p)
             print("writing new topics")
-            out_bag.write(topic_out + "segmented_pointcloud_ground", pc2_g, t)
-            out_bag.write(topic_out + "segmented_pointcloud_plants", pc2_p, t)
+            out_bag.write(topic_out + "segmented_pointcloud_ground", pc2_p, t)
+            out_bag.write(topic_out + "segmented_pointcloud_plants", pc2_g, t)
     in_bag.close()
     out_bag.close() 
     print("done")

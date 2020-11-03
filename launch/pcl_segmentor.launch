@@ -2,7 +2,7 @@
 
     <param name="use_sim_time" value="true" />
 
-    <node pkg="rosbag" type="play" name="largeplants_full_player" output="screen" required="true" args="--clock /home/srbh/agrirobo_proj/with_pcls/smallplants_FullPCl.bag"/>
+    <node pkg="rosbag" type="play" name="largeplants_full_player" output="screen" required="true" args="--clock -l /home/srbh/agrirobo_proj/with_pcls/largeplants_FullPCl_Labelled.bag"/>
 
     <node name="pcl_segmentor_node" pkg="myproject1" type="pcl_segmentor_node" output="screen">
         <!-- <param name="neighborhood_radius" value="2" /> -->
@@ -15,7 +15,8 @@
         <!--0 to 100-->
         <!--param name="curvature_threshold" value="0.08f" /-->
         
-        <remap from="input_cloud" to="/sensor/laser/vlp16/front/comprehensive_pointcloud_xyzirgbtvc"/>
+        <remap from="input_cloud" to="/sensor/laser/vlp16/front/segmented_pointcloud_ground"/>
+        <remap from="input_cloud2" to="/sensor/laser/vlp16/front/segmented_pointcloud_plants"/>
         <remap from="output_cloud3" to="/sensor/laser/vlp16/front/point_cloud_outliers"/>
         <remap from="output_cloud2" to="/sensor/laser/vlp16/front/point_cloud_inliers"/>
         <!-- <remap from="output_cloud1" to="/sensor/laser/vlp16/front/comprehensive_pointcloud_xyzirgbtvc"/> -->
