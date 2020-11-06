@@ -154,6 +154,25 @@ sensor_msgs::PointCloud2::Ptr PclSegmentor::inlierCloud(){
     }
 }
 
+pcl::PointCloud<pcl::FPFHSignature33>::Ptr PclSegmentor::fpfhs(){
+    if(!computed_normals){
+        return NULL;
+    }
+    else{
+        pcl::FPFHEstimation<PointT, PointNT, pcl::FPFHSignature33> fpfh;
+          fpfh.setInputCloud (cloud_in);
+        //   fpfh.setInputNormals (normals);
+        fpfh.setInputNormals (cloud_normals);
+        pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
+        fpfh.setSearchMethod (tree);
+        pcl::PointCloud<pcl::FPFHSignature33>::Ptr fpfhs (new pcl::PointCloud<pcl::FPFHSignature33> ());
+        fpfh.setRadiusSearch (0.12);
+        fpfh.compute (*fpfhs);
+        // fpfh.computeSPFHSignatures (std::vector<int> &spfh_hist_lookup,Eigen::MatrixXf &hist_f1, Eigen::MatrixXf &hist_f2, Eigen::MatrixXf &hist_f3)
+        return fpfhs;
+    }
+}
+
 
 sensor_msgs::PointCloud2::Ptr PclSegmentor::outlierCloud(){
 

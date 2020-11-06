@@ -34,8 +34,6 @@ ros::Publisher point_cloud_pub3, point_cloud_pub1, point_cloud_pub2, vis_marker_
 PclSegmentor* pcl_segmentor;
 std::string filepath;
 tf2_ros::Buffer tf_buffer;
-sensor_msgs::PointCloud2::Ptr pcl_plants(new sensor_msgs::PointCloud2());
-
 
 geometry_msgs::Quaternion set_orientation(pcl::ModelCoefficients::Ptr coeffs){
     tf2::Quaternion quat;
@@ -157,11 +155,19 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros2, const sensor_m
         ROS_ERROR("%s", ex.what());       
     }
     point_cloud_pub3.publish(*cloud_outliers);
+
+    PclSegmentor *pcl_segmentor2 = new PclSegmentor(pcl_plants);
+    if(!pcl_segmentor2->computePclNormals(ksearch_radius)){
+        return;
+    }
+    pcl::PointCloud<pcl::FPFHSignature33>::Ptr fpfhs_cloud = pcl_segmentor2->fpfhs();
     
-    
+    point_cloud_pub1.publish(*fpfhs_cloud);    
     // normal_marker.header.frame_id = cloud_ros->header.frame_id;
     // normal_marker.header.stamp = cloud_ros->header.stamp;
     // vis_marker_pub.publish(normal_marker);
+
+
     // std::string filename;
     // try{
     //     transformStamped = tf_buffer.lookupTransform("base_footprint",pcl_plants->header.frame_id, pcl_plants->header.stamp);
@@ -186,7 +192,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros2, const sensor_m
     //     p.x = *out_x;
     //     p.y = *out_y;
     //     p.z = *out_z;
-    //     // double alt = pcl::pointToPlaneDistanceSigned(p, coefficients->values[0], coefficients->values[1], coefficients->values[2],coefficients->values[3]);
+    //     double alt = pcl::pointToPlaneDistanceSigned(p, coefficients->values[0], coefficients->values[1], coefficients->values[2],coefficients->values[3]);
     //     if (!write_to_file(filename, std::to_string(*out_x) 
     //                                 + "\t" + std::to_string(*out_y) 
     //                                 + "\t" + std::to_string(*out_z) 
@@ -194,8 +200,8 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_ros2, const sensor_m
     //                                 + "\t" + std::to_string(*out_rgb)  
     //                                 + "\t" + std::to_string(*out_tgi)  
     //                                 + "\t" + std::to_string(*out_vari)  
-    //                                 + "\t" + std::to_string(*out_curv))){
-    //                                 // + "\t" + std::to_string(alt))){
+    //                                 + "\t" + std::to_string(*out_curv)//)){
+    //                                 + "\t" + std::to_string(alt))){
     //         ROS_ERROR("%s: error writing value ", __func__);
     //     }
     //     ++out_x;
@@ -223,7 +229,7 @@ int main(int argc, char *argv[])
     nhPriv.param("NormalDistanceWeight", NormalDistanceWeight, 0.02);
 
     // nhPriv.param("save_", save_flag, false);
-    // nhPriv.param<std::string>("output_fpath", filepath, "/home/srbh/agrirobo_proj/with_pcls/data/full_pcl/");
+    nhPriv.param<std::string>("output_fpath", filepath, "/home/srbh/agrirobo_proj/with_pcls/data/full_pcl/");
 
     tf2_ros::TransformListener tf_listener(tf_buffer);
     message_filters::Subscriber<sensor_msgs::PointCloud2> cloud_sub(nh, "input_cloud", 1);
@@ -236,7 +242,7 @@ int main(int argc, char *argv[])
     // ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("input_cloud", 10, callback);
     // vis_marker_pub = nh.advertise<visualization_msgs::Marker>("normal_marker", 1, true);
     vis_marker_pub1 = nh.advertise<visualization_msgs::Marker>("plane_marker", 1, true);
-    // point_cloud_pub1 = nh.advertise<sensor_msgs::PointCloud2>("output_cloud1", 10, true);
+    point_cloud_pub1 = nh.advertise<sensor_msgs::PointCloud2>("output_cloud1", 10, true);
     point_cloud_pub2 = nh.advertise<sensor_msgs::PointCloud2>("output_cloud2", 10, true);
     point_cloud_pub3 = nh.advertise<sensor_msgs::PointCloud2>("output_cloud3", 10, true);
 

@@ -17,6 +17,7 @@
 #include <pcl_ros/transforms.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+#include <pcl/features/fpfh.h>
 
 typedef pcl::PointXYZ PointT;
 typedef pcl::Normal PointNT;
@@ -35,6 +36,8 @@ public:
     sensor_msgs::PointCloud2::Ptr inlierCloud();
     sensor_msgs::PointCloud2::Ptr outlierCloud();
     bool computePclNormals(int KSearchRadius);
+    pcl::PointCloud<pcl::FPFHSignature33>::Ptr fpfhs();
+
 
 
 protected:

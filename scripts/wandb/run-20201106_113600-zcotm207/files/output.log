@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "props_full.py", line 417, in <module>
+    tgi2 = tgi2/c2
+ZeroDivisionError: division by zero

@@ -34,6 +34,7 @@ def label_pcl(df):
             {
                 "tgi": df["tgi"].tolist(),
                 "vari": df["vari"].tolist()
+                
             }
         )
     test_data = test_data.replace([np.inf, -np.inf], np.nan)

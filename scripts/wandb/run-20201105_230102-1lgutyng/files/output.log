@@ -1,0 +1,15 @@
+wandb: 
+wandb: Plotting SVC.
+wandb: WARNING feature_importances_ or coef_ attribute not in classifier. Cannot plot feature importances.
+wandb: Logged feature importances.
+wandb: Logged learning curve.
+wandb: Logged confusion matrix.
+wandb: Logged summary metrics.
+wandb: Logged class proportions.
+wandb: Logged calibration curve.
+wandb: Logged roc curve.
+wandb: Logged precision recall curve.
+gmm accuracy 0.7521344717182498 km accuracy 0.6595517609391676
+gmm MCC 0.4770049625698689 km MCC 0.3743232701753421
+svc accuracy 0.7353333333333333 svc MCC 0.4728652081280937
+rf accuracy 0.74 rf MCC 0.45156638007530947

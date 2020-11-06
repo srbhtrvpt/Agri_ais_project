@@ -2,15 +2,22 @@
 
     <param name="use_sim_time" value="true" />
 
-    <node pkg="rosbag" type="play" name="largeplants_full_player" output="screen" required="true" args="--clock -l /home/srbh/agrirobo_proj/with_pcls/largeplants_FullPCl_Labelled.bag"/>
+    <node pkg="rosbag" type="play" name="largeplants_full_player" output="screen" required="true" args="--clock /home/srbh/agrirobo_proj/with_pcls/largeplants_FullPCl_Labelled.bag"/>
 
     <node name="pcl_segmentor_node" pkg="myproject1" type="pcl_segmentor_node" output="screen">
         <!-- <param name="neighborhood_radius" value="2" /> -->
-        <param name="output_fpath" value="/home/srbh/agrirobo_proj/with_pcls/data/full_pcl/" />
+        <param name="output_fpath" value="/home/srbh/agrirobo_proj/with_pcls/data/comp_pcl/small/" />
         <param name="save_" value="true" />
+        <!-- <param name="ksearch_radius" value="9" />
+        <param name="Distance_Threshold" value="0.02" />
+        <param name="NormalDistanceWeight" value="0.01" />
+         -->
+        <param name="NormalDistanceWeight" value="0.02" /> -->
         <param name="ksearch_radius" value="16" />
         <param name="Distance_Threshold" value="0.05" />
-        <param name="NormalDistanceWeight" value="0.02" />
+
+
+
         <!-- <param name="normal_visualisation_scale" value="33" />  -->
         <!--0 to 100-->
         <!--param name="curvature_threshold" value="0.08f" /-->
@@ -19,6 +26,6 @@
         <remap from="input_cloud2" to="/sensor/laser/vlp16/front/segmented_pointcloud_plants"/>
         <remap from="output_cloud3" to="/sensor/laser/vlp16/front/point_cloud_outliers"/>
         <remap from="output_cloud2" to="/sensor/laser/vlp16/front/point_cloud_inliers"/>
-        <!-- <remap from="output_cloud1" to="/sensor/laser/vlp16/front/comprehensive_pointcloud_xyzirgbtvc"/> -->
+        <remap from="output_cloud1" to="/sensor/laser/vlp16/front/fpfhs_cloud"/>
     </node>
 </launch>
