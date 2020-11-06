@@ -42,7 +42,7 @@ gitdb==4.0.5
 gitpython==3.1.11
 gym==0.17.2
 html5lib==0.999999999
-httplib2==0.9.2
+httplib2==0.18.0
 idna==2.10
 image-geometry==1.13.0
 interactive-markers==1.11.5
