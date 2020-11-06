@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "props_full.py", line 381, in <module>
-    clf = svm.SVC().fit(X_train, y_train, probability=True)
-TypeError: fit() got an unexpected keyword argument 'probability'

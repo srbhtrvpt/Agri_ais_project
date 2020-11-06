@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "props_full.py", line 383, in <module>
-    y_probas = clf.predict_proba(X_test)
-  File "/usr/lib/python3/dist-packages/sklearn/svm/base.py", line 590, in predict_proba
-    self._check_proba()
-  File "/usr/lib/python3/dist-packages/sklearn/svm/base.py", line 557, in _check_proba
-    raise AttributeError("predict_proba is not available when "
-AttributeError: predict_proba is not available when  probability=False
